@@ -12,7 +12,7 @@ import io
 from gtts import gTTS
 
 app = dash.Dash(__name__, external_stylesheets=['https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/css/bootstrap.min.css'])
-root_save_dir = '/storage/emulated/0/Documents'#'/data/user/0/com.example.dashandroid.dashandroid/files/data'
+root_save_dir = '.' #'/storage/emulated/0/Documents'#'/data/user/0/com.example.dashandroid.dashandroid/files/data'
 # app.config['suppress_callback_exceptions'] = True
 
 try:
@@ -631,4 +631,4 @@ def text_to_speech(sentence_clicks):
 
 
 if __name__ == '__main__':
-    app.run(debug=True)
+    app.run(host='0.0.0.0',debug=False, port=8050)
