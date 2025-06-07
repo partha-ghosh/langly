@@ -9,10 +9,11 @@ import base64
 import re
 from deep_translator import GoogleTranslator, MyMemoryTranslator
 import io
+import functools
 from gtts import gTTS
 
 app = dash.Dash(__name__, external_stylesheets=['https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/css/bootstrap.min.css'])
-root_save_dir = '.' #'/storage/emulated/0/Documents'#'/data/user/0/com.example.dashandroid.dashandroid/files/data'
+root_save_dir = '.'
 # app.config['suppress_callback_exceptions'] = True
 
 try:
@@ -22,6 +23,11 @@ except FileNotFoundError:
     data = dict()
 
 translator = dict(translator=None)
+
+@functools.lru_cache(maxsize=512)
+def translate(text):
+    print('translated')
+    return translator['translator'].translate(text)
 
 def save_data(data_to_save):
     with open(f'{root_save_dir}/vocabulary.json', 'w') as f:
@@ -238,8 +244,8 @@ def update_subsentences(active_words, container_id, sentences_store, lang1, lang
             continue
         sub_words = [words[i] for i in range(group[0], group[-1]+1)]
         subsentence = ' '.join(sub_words)
-        translation = translator['translator'].translate(subsentence) #f"{subsentence} (translated)"
-        
+        translation = translate(subsentence) #f"{subsentence} (translated)"
+
         subs.append(html.Div([
             html.Div([
                 html.Strong(subsentence),
@@ -295,7 +301,7 @@ def update_vocabulary(add_clicks, remove_clicks, sentences_store, vocab_data, la
 
     if 'add-btn' in button_id['type']:
         vocab_data[lang_key].setdefault(subsentence, {
-            'translation': translator['translator'].translate(subsentence), #f"{subsentence} (translated)",
+            'translation': translate(subsentence), #f"{subsentence} (translated)",
             'rating': 1,
             'examples': list()
         })
