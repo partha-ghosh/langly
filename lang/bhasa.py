@@ -26,7 +26,6 @@ translator = dict(translator=None)
 
 @functools.lru_cache(maxsize=512)
 def translate(text):
-    print('translated')
     return translator['translator'].translate(text)
 
 def save_data(data_to_save):
@@ -88,6 +87,7 @@ def update_spaced_repetition(subsentence_details, rating):
     return subsentence_details
 
 # Function to generate audio data URI
+@functools.lru_cache(maxsize=4096)
 def text_to_speech_uri(text, lang):
     tts = gTTS(text=text, lang=lang, slow=False)
     # tts.save(f'{root_save_dir}/test.mp3')
