@@ -89,7 +89,7 @@ def update_spaced_repetition(subsentence_details, rating):
 # Function to generate audio data URI
 @functools.lru_cache(maxsize=4096)
 def text_to_speech_uri(text, lang):
-    tts = gTTS(text=text, lang=lang, slow=False)
+    tts = gTTS(text=text, lang=lang)
     # tts.save(f'{root_save_dir}/test.mp3')
     audio_buffer = io.BytesIO()
     tts.write_to_fp(audio_buffer)
