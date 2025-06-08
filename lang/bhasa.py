@@ -7,7 +7,7 @@ from datetime import datetime, timedelta
 import random
 import base64
 import re
-from deep_translator import GoogleTranslator, MyMemoryTranslator
+from deep_translator import GoogleTranslator, MyMemoryTranslator, DeeplTranslator
 import io
 import functools
 from gtts import gTTS
@@ -201,8 +201,9 @@ def process_text(n_clicks, text, lang1, lang2):
     sentences_store = {}
     children = []
 
-    translator['translator'] = MyMemoryTranslator(source=[option for option in options if option['value']==lang1][0]['label'].lower(), target=[option for option in options if option['value']==lang2][0]['label'].lower()) #(source=lang1, target=lang2)
-    
+    # translator['translator'] = MyMemoryTranslator(source=[option for option in options if option['value']==lang1][0]['label'].lower(), target=[option for option in options if option['value']==lang2][0]['label'].lower()) #(source=lang1, target=lang2)
+    translator['translator'] = DeeplTranslator(api_key="", source=lang1, target=lang2, use_free_api=True)
+
     for i, sent in enumerate(sentences):
         sent_id = str(uuid.uuid4())
         words = sent.split()
