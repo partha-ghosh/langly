@@ -23,6 +23,7 @@ except FileNotFoundError:
     data = dict()
 
 translator = dict(translator=None)
+tts_cache = dict()
 
 @functools.lru_cache(maxsize=512)
 def translate(text):
@@ -87,14 +88,17 @@ def update_spaced_repetition(subsentence_details, rating):
     return subsentence_details
 
 # Function to generate audio data URI
-@functools.lru_cache(maxsize=4096)
 def text_to_speech_uri(text, lang):
-    tts = gTTS(text=text, lang=lang)
-    # tts.save(f'{root_save_dir}/test.mp3')
-    audio_buffer = io.BytesIO()
-    tts.write_to_fp(audio_buffer)
-    audio_buffer.seek(0)
-    return f"data:audio/mpeg;base64,{base64.b64encode(audio_buffer.read()).decode()}"
+    data = tts_cache.get(text, None)
+
+    if data is None:
+        tts = gTTS(text=text, lang=lang)
+        # tts.save(f'{root_save_dir}/test.mp3')
+        audio_buffer = io.BytesIO()
+        tts.write_to_fp(audio_buffer)
+        audio_buffer.seek(0)
+        data = f"data:audio/mpeg;base64,{base64.b64encode(audio_buffer.read()).decode()}"
+    return data
 
 options = [
     {'label': 'English', 'value': 'en'},
