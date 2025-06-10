@@ -518,23 +518,27 @@ def update_vocabulary_list(search_text, vocab_data, lang1, lang2):
     items = []
     
     # Get all sentences and filter by search text
-    all_sentences = []
+    all_sentences = dict()
     for subsentence in vocab_data[lang_key]:
         examples = vocab_data[lang_key][subsentence]['examples']
         for sentence, translation in examples:
-            all_sentences.append((sentence, translation))
-    
+            all_sentences.setdefault(sentence, dict(translation=translation, usage=dict()))
+            all_sentences[sentence]['usage'][subsentence] = vocab_data[lang_key][subsentence]['translation']
+
     if search_text:
         search_lower = search_text.lower()
         filtered = [
-            (s, t) for s, t in all_sentences
-            if search_lower in s.lower() or search_lower in t.lower()
+            item for item in all_sentences.items()
+            if search_lower in str(item).lower()
         ]
     else:
-        filtered = all_sentences
+        filtered = list(all_sentences.items())
     
     # Create list items
-    for sentence, translation in filtered:
+    for sentence, others in filtered:
+        translation = others['translation']
+        usage = others['usage']
+
         item = html.Div([
             html.Div([
                 html.Div([
@@ -548,6 +552,9 @@ def update_vocabulary_list(search_text, vocab_data, lang1, lang2):
                     html.Button('Read it', 
                               className='btn btn-info btn-sm ml-2',
                               id={'type': 'read-it', 'data-text': translation.encode().hex(), 'data-lang': lang2})
+                ]),
+                html.Div([
+                    ', '.join([f'{word} = {meaning}' for word, meaning in usage.items()])
                 ])
             ], className='p-3 border rounded mb-2',
                style={'backgroundColor': '#e9fce9'})
