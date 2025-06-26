@@ -11,6 +11,8 @@ from deep_translator import GoogleTranslator, MyMemoryTranslator, DeeplTranslato
 import io
 import functools
 from gtts import gTTS
+import atexit
+from api_keys import DEEPL_API_KEY
 
 app = dash.Dash(__name__, external_stylesheets=['https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/css/bootstrap.min.css'])
 root_save_dir = '.'
@@ -18,9 +20,9 @@ root_save_dir = '.'
 
 try:
     with open(f'{root_save_dir}/vocabulary.json', 'r') as f:
-        data = json.load(f)
+        global_vocab_data = json.load(f)
 except FileNotFoundError:
-    data = dict()
+    global_vocab_data = dict()
 
 translator = dict(translator=None)
 tts_cache = dict()
@@ -89,6 +91,7 @@ def update_spaced_repetition(subsentence_details, rating):
 
 # Function to generate audio data URI
 def text_to_speech_uri(text, lang):
+    print(text)
     data = tts_cache.get(text, None)
 
     if data is None:
@@ -178,7 +181,7 @@ app.layout = html.Div([
     ]),
     dcc.Store(id='active-words', data={}),
     dcc.Store(id='sentences-store', data={}),
-    dcc.Store(id='vocab-store', data=data),
+    dcc.Store(id='vocab-store', data=global_vocab_data),
     dcc.Store(id='session-store', data={
         'due_cards': [],
         'current_index': 0,
@@ -206,7 +209,7 @@ def process_text(n_clicks, text, lang1, lang2):
     children = []
 
     # translator['translator'] = MyMemoryTranslator(source=[option for option in options if option['value']==lang1][0]['label'].lower(), target=[option for option in options if option['value']==lang2][0]['label'].lower()) #(source=lang1, target=lang2)
-    translator['translator'] = DeeplTranslator(api_key="", source=lang1, target=lang2, use_free_api=True)
+    translator['translator'] = DeeplTranslator(api_key=DEEPL_API_KEY, source=lang1, target=lang2, use_free_api=True)
 
     for i, sent in enumerate(sentences):
         sent_id = str(uuid.uuid4())
@@ -319,7 +322,9 @@ def update_vocabulary(add_clicks, remove_clicks, sentences_store, vocab_data, la
             vocab_data[lang_key].pop(subsentence)
 
     # Save the modified data
-    save_data(vocab_data)
+    # save_data(vocab_data)
+    global global_vocab_data
+    global_vocab_data = vocab_data
     return vocab_data
 
 @callback(
@@ -473,7 +478,9 @@ def update_card(session_data, show_clicks, hard_clicks, medium_clicks, easy_clic
             
             # Update vocabulary data
             vocab_data[lang_key][subsentence] = updated_details
-            save_data(vocab_data)
+            # save_data(vocab_data)
+            global global_vocab_data
+            global_vocab_data = vocab_data
             
             # Move to next card
             updated_session = session_data.copy()
@@ -647,6 +654,11 @@ def text_to_speech(sentence_clicks):
 
     return dash.no_update, dash.no_update
 
+def save():
+    global global_vocab_data
+    save_data(global_vocab_data)
+
+atexit.register(save)
 
 if __name__ == '__main__':
     app.run(host='0.0.0.0',debug=False, port=8050)
