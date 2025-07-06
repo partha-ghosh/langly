@@ -1,1 +1,1 @@
-DEEPL_API_KEY = ''
+DEEPL_API_KEY = ""

@@ -3,7 +3,7 @@ RUN apk update && apk upgrade
 RUN apk add python3
 RUN python -m venv /home/venv
 ENV PATH=/home/venv/bin:$PATH
-RUN pip install dash deep_translator gTTS
+RUN pip install flask flask_socketio deep_translator gTTS
 
 # https://github.com/Hax4us/TermuxAlpine
 # docker build -t alpine:1.0 .
