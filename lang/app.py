@@ -286,15 +286,15 @@ def modify_selected_indices2(sent_idx):
                 Element('div', attrs=dict(class_="pb-2"), leaf=subsentence + ' → '+ meaning)
             ).add(
                 Element('div', attrs=dict(class_="flex justify-end gap-2")).add(
-                    Element('a', attrs=dict(class_="uk-btn uk-btn-default uk-btn-sm uk-btn-icon", href="#", onclick=f"socket.emit('exec_py_serialized', {serialize_to_base64({'fn': text_to_speech, 'args': [meaning, info['unknown_lang']]})!r})")).add(
+                    Element('a', attrs=dict(class_="uk-btn uk-btn-default uk-btn-sm uk-btn-icon", onclick=f"socket.emit('exec_py_serialized', {serialize_to_base64({'fn': text_to_speech, 'args': [meaning, info['unknown_lang']]})!r})")).add(
                         Element('uk-icon', attrs=dict(icon="volume-2"))
                     )
                 ).add(
-                    Element('a', attrs=dict(class_="uk-btn uk-btn-default uk-btn-sm uk-btn-icon", href="#", onclick=f"socket.emit('exec_py_serialized', {serialize_to_base64({'fn': save_meaning, 'args': [subsentence, meaning, sent_idx]})!r})")).add(
+                    Element('a', attrs=dict(class_="uk-btn uk-btn-default uk-btn-sm uk-btn-icon", onclick=f"socket.emit('exec_py_serialized', {serialize_to_base64({'fn': save_meaning, 'args': [subsentence, meaning, sent_idx]})!r})")).add(
                         Element('uk-icon', attrs=dict(icon="save"))
                     )
                 ).add(
-                    Element('a', attrs=dict(class_="uk-btn uk-btn-default uk-btn-sm uk-btn-icon", href="#", onclick=f"socket.emit('exec_py_serialized', {serialize_to_base64({'fn': delete_meaning, 'args': [subsentence,]})!r})")).add(
+                    Element('a', attrs=dict(class_="uk-btn uk-btn-default uk-btn-sm uk-btn-icon", onclick=f"socket.emit('exec_py_serialized', {serialize_to_base64({'fn': delete_meaning, 'args': [subsentence,]})!r})")).add(
                         Element('uk-icon', attrs=dict(icon="trash-2"))
                     )
                 )
@@ -387,7 +387,7 @@ def process_text(text):
             Element('div', attrs=dict(class_="flex justify-between gap-2 pb-2")).add(
                 Element('div', attrs=dict(class_="py-1 text-muted-foreground"), leaf=translation)
             ).add(
-                Element('a', attrs=dict(class_="uk-btn uk-btn-default uk-btn-sm uk-btn-icon self-end", href="#", onclick=f"socket.emit('exec_py_serialized', {serialize_to_base64({'fn': text_to_speech, 'args': [translation, info['unknown_lang']]})!r})")).add(
+                Element('a', attrs=dict(class_="uk-btn uk-btn-default uk-btn-sm uk-btn-icon self-end", onclick=f"socket.emit('exec_py_serialized', {serialize_to_base64({'fn': text_to_speech, 'args': [translation, info['unknown_lang']]})!r})")).add(
                     Element('uk-icon', attrs=dict(icon="volume-2"))
                 )
             )
@@ -401,7 +401,7 @@ def process_text(text):
 
         for word_idx, word in enumerate(words):
             word_container.add(
-                Element('a', attrs=dict(class_="uk-btn", href="#", onclick=f"this.classList.toggle('uk-btn-primary'); socket.emit('exec_py_serialized', {serialize_to_base64({'fn': modify_selected_indices, 'args': [sent_idx, word_idx]})!r})"), leaf=word)
+                Element('a', attrs=dict(class_="uk-btn", onclick=f"this.classList.toggle('uk-btn-primary'); socket.emit('exec_py_serialized', {serialize_to_base64({'fn': modify_selected_indices, 'args': [sent_idx, word_idx]})!r})"), leaf=word)
             )
             
         info['learn_container'].add(card)
