@@ -280,6 +280,7 @@ def modify_selected_indices2(sent_idx):
         subsentences.append(subsentence)
         meanings.append(meaning)
 
+    idx = -1
     for idx, (subsentence, meaning) in enumerate(zip(subsentences, meanings)):
         info['meanings_containers'][sent_idx].update(
             Element('li').add(
