@@ -55,6 +55,7 @@ import json
 from datetime import datetime, timedelta
 import random
 import atexit
+import re
 from api_keys import DEEPL_API_KEY
 
 root_save_dir = '.'
@@ -114,6 +115,7 @@ def update_vocab_list(search_string):
         # Get all sentences and filter by search text
         all_sentences = dict()
         for subsentence in info['vocab_data'][lang_key]:
+            subsentence = re.sub(r'[^a-zA-Z0-9 ]', '', subsentence)
             examples = info['vocab_data'][lang_key][subsentence]['examples']
             for sentence, translation in examples:
                 all_sentences.setdefault(sentence, dict(translation=translation, usage=dict()))
@@ -177,6 +179,8 @@ def text_to_speech(text, lang):
     # return data
 
 def save_meaning(subsentence, meaning, sent_idx):
+    subsentence = re.sub(r'[^a-zA-Z0-9 ]', '', subsentence)
+
     lang_key = f"{info['known_lang']}2{info['unknown_lang']}"
     info['vocab_data'].setdefault(lang_key, dict())
 
@@ -194,6 +198,7 @@ def save_meaning(subsentence, meaning, sent_idx):
         info['vocab_data'][lang_key][subsentence]['examples'] = info['vocab_data'][lang_key][subsentence]['examples'][-100:]
 
 def delete_meaning(subsentence):
+    subsentence = re.sub(r'[^a-zA-Z0-9 ]', '', subsentence)
     lang_key = f"{info['known_lang']}2{info['unknown_lang']}"
     info['vocab_data'].setdefault(lang_key, dict())
     if info['vocab_data'][lang_key].get(subsentence, None):
