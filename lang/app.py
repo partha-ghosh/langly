@@ -1,0 +1,425 @@
+from flask import Flask, render_template
+from flask_socketio import SocketIO, emit
+from utils import Element
+
+app = Flask(__name__)
+app.config['SECRET_KEY'] = 'your_secret_key'
+socketio = SocketIO(app)
+
+@app.route('/')
+def index():
+    return render_template('index.html')
+
+@socketio.on('connect')
+def handle_connect():
+    print('Client connected!')
+
+@socketio.on('exec_py')
+def handle_exec_py(data):
+
+    if data['fn'] == 'process_text':
+        run_recent(info['lock'], info['next_fn'], (globals()[data['fn']], data['args']), {'fn': globals()[data['fn']], 'args': data['args']})
+    else:
+        return globals()[data['fn']](*data['args'])
+    # emit('resp', {'message': '<h2>Hello</h2>'})
+
+@socketio.on('exec_py_serialized')
+def handle_exec_py_serialized(data):
+    data = deserialize_from_base64(data)
+    return data['fn'](*data['args'])
+
+def run_recent(lock, next, identifier, fn_data):
+    identifier = serialize_to_base64(identifier)
+
+    next[identifier] = fn_data
+
+    while lock.get(identifier, None):
+        time.sleep(0.01)
+    
+    lock[identifier] = True
+    fn = fn_data['fn']
+    args = fn_data.get('args', tuple())
+    kwargs = fn_data.get('kwargs', dict())
+    x = fn(*args, **kwargs)  
+    lock[identifier] = False    
+    return x
+
+import re
+from deep_translator import GoogleTranslator, MyMemoryTranslator, DeeplTranslator
+from gtts import gTTS
+import io
+import base64
+import pickle
+import time
+import json
+from datetime import datetime, timedelta
+import random
+import atexit
+from api_keys import DEEPL_API_KEY
+
+root_save_dir = '.'
+try:
+    with open(f'{root_save_dir}/vocabulary.json', 'r') as f:
+        vocab_data = json.load(f)
+except FileNotFoundError:
+    vocab_data = dict()
+
+info = dict(
+    known_lang='en',
+    unknown_lang='de',
+    vocab_data = vocab_data,
+    dues = dict(),
+    translation_cache = dict(),
+    tts_cache = dict(),
+    translator = None,
+    sentences = [],
+    words = [],
+    selected_indices = [],
+    lock = dict(),
+    next_fn = dict(),
+
+    meanings_containers = [],
+    learn_container = [learn_container := Element('div'), setattr(learn_container, 'key', 'learn-container')][0],
+    question_container = [question_container := Element('span'), setattr(question_container, 'key', 'question')][0],
+    answer_container = [answer_container := Element('span'), setattr(answer_container, 'key', 'answer')][0],
+    examples_container = [examples_container := Element('div', attrs=dict(class_="uk-list uk-list-divider")), setattr(examples_container, 'key', 'examples')][0],
+    search_result_container = [search_result_container := Element('div', attrs=dict(class_="space-y-2")), setattr(search_result_container, 'key', 'search_results')][0],
+
+)
+
+def serialize_to_base64(obj):
+    """Serialize any Python object to a Base64 string."""
+    pickled_data = pickle.dumps(obj)
+    base64_encoded = base64.b64encode(pickled_data)
+    return base64_encoded.decode('utf-8')
+
+def deserialize_from_base64(base64_str):
+    """Deserialize a Base64 string back to the original Python object."""
+    base64_bytes = base64_str.encode('utf-8')
+    pickled_data = base64.b64decode(base64_bytes)
+    return pickle.loads(pickled_data)
+
+def save_vocab():
+    print('at exit', info['vocab_data'])
+    with open(f'{root_save_dir}/vocabulary.json', 'w') as f:
+        print('at exit2', info['vocab_data'])
+        json.dump(info['vocab_data'], f)
+atexit.register(save_vocab)
+
+def update_vocab_list(search_string):
+    if (not search_string and len(info['search_result_container'].children_order) == 0) \
+        or (search_string and len(info['search_result_container'].children_order) > 0):
+
+        print('ok')
+        lang_key = f"{info['known_lang']}2{info['unknown_lang']}"
+        info['vocab_data'].setdefault(lang_key, dict())
+
+        # Get all sentences and filter by search text
+        all_sentences = dict()
+        for subsentence in info['vocab_data'][lang_key]:
+            examples = info['vocab_data'][lang_key][subsentence]['examples']
+            for sentence, translation in examples:
+                all_sentences.setdefault(sentence, dict(translation=translation, usage=dict()))
+                all_sentences[sentence]['usage'][subsentence] = vocab_data[lang_key][subsentence]['translation']
+
+        if search_string:
+            search_lower = search_string.lower()
+            filtered = [
+                item for item in all_sentences.items() if search_lower in str(item).lower()
+            ]
+        else:
+            filtered = list(all_sentences.items())
+        
+        idx = -1
+        for idx, (sentence, others) in enumerate(filtered):
+            translation = others['translation']
+            usage = others['usage']
+
+            info['search_result_container'].update(
+                search_result := Element('div', attrs=dict(class_="uk-card uk-card-default uk-card-body")).add(
+                    Element('p', leaf=sentence)
+                ).add(
+                    Element('p', attrs=dict(class_="pb-2 text-muted-foreground"), leaf=translation)
+                ), index=idx
+            )
+
+            for word, meaning in usage.items():
+                search_result.add(
+                    Element('span', attrs=dict(class_="uk-label"), leaf=f"{word} -> {meaning}")
+                )
+        
+        for ri in range(idx+1, len(info['search_result_container'].children_order)):
+            info['search_result_container'].update(
+                Element('div'), index=ri
+            )
+
+            
+
+def translate(text):
+    translation = info['translation_cache'].get(text, None)
+
+    if translation is None:
+        translation = info['translator'].translate(text)
+        info['translation_cache'][text] = translation
+
+    return translation
+
+def text_to_speech(text, lang):
+    data = info['tts_cache'].get(text, None)
+
+    if data is None:
+        tts = gTTS(text=text, lang=lang)
+        # tts.save(f'{root_save_dir}/test.mp3')
+        audio_buffer = io.BytesIO()
+        tts.write_to_fp(audio_buffer)
+        audio_buffer.seek(0)
+        data = f"data:audio/mpeg;base64,{base64.b64encode(audio_buffer.read()).decode()}"
+        info['tts_cache'][text] = data
+
+    emit('play', data)
+    # return data
+
+def save_meaning(subsentence, meaning, sent_idx):
+    lang_key = f"{info['known_lang']}2{info['unknown_lang']}"
+    info['vocab_data'].setdefault(lang_key, dict())
+
+    if not info['vocab_data'][lang_key].get(subsentence, None):
+        info['vocab_data'][lang_key][subsentence] = dict(
+            translation=meaning,
+            rating=1,
+            interval=1,
+            examples=[]
+        )
+    info['vocab_data'][lang_key][subsentence]['examples'].append(
+        [info['sentences'][sent_idx], translate(info['sentences'][sent_idx])]
+    )
+    if len(info['vocab_data'][lang_key][subsentence]['examples']) > 100:
+        info['vocab_data'][lang_key][subsentence]['examples'] = info['vocab_data'][lang_key][subsentence]['examples'][-100:]
+    print(info['vocab_data'])
+
+def delete_meaning(subsentence):
+    lang_key = f"{info['known_lang']}2{info['unknown_lang']}"
+    info['vocab_data'].setdefault(lang_key, dict())
+    if info['vocab_data'][lang_key].get(subsentence, None):
+        if len(info['vocab_data'][lang_key][subsentence]['examples']) == 1:
+            info['vocab_data'][lang_key].pop(subsentence)
+        else:
+            info['vocab_data'][lang_key][subsentence]['examples'].pop(-1)
+
+def calc_dues():
+    lang_key = f"{info['known_lang']}2{info['unknown_lang']}"
+    info['dues'].setdefault(lang_key, [])
+    
+    if len(info['dues'][lang_key]) == 0:
+        today = datetime.today().date()
+        for subsentence, details in vocab_data.get(lang_key, {}).items():
+            next_review = datetime.strptime(details.get('next_review', '2000-01-01'), '%Y-%m-%d').date()
+            if next_review <= today:
+                info['dues'][lang_key].append(subsentence)
+        random.shuffle(info['dues'][lang_key])
+        print('calc_dues', info['dues'][lang_key])
+
+        get_next_card()
+
+def get_next_card():
+    lang_key = f"{info['known_lang']}2{info['unknown_lang']}"
+    if len(info['dues'][lang_key])==0:
+        info['question_container'].update(Element('span', leaf='No more cards due for review! 🎉'), index=0)
+        return 0
+    subsentence = info['dues'][lang_key][0]
+    print('get_next_card', info['dues'][lang_key])
+    meaning = info['vocab_data'][lang_key][subsentence]['translation']
+    related_examples = random.sample(info['vocab_data'][lang_key][subsentence]['examples'], min(10, len(info['vocab_data'][lang_key][subsentence]['examples'])))
+
+    info['question_container'].update(Element('span', leaf=subsentence), index=0)
+    info['answer_container'].update(Element('span', leaf=meaning), index=0)
+
+    examples = info['examples_container']
+    for idx, (sentence, translation) in enumerate(related_examples):
+        examples.update(
+            Element('li').add(
+                Element('p', leaf=sentence)
+            ).add(
+                Element('p', attrs=dict(class_="py-1 text-muted-foreground"), leaf=translation)
+            ), index=idx
+        )
+
+def update_spaced_repetition(rating):
+    lang_key = f"{info['known_lang']}2{info['unknown_lang']}"
+    ratings = {'hard': 0.75, 'medium': 1.5, 'easy': 2.5}
+
+    subsentence = info['dues'][lang_key][0]
+    interval = info['vocab_data'][lang_key][subsentence]['interval']
+    
+    # Update interval based on rating
+    new_interval = interval * ratings.get(rating, 1)
+    info['vocab_data'][lang_key][subsentence]['interval'] = new_interval
+    
+    # Calculate next review date
+    next_review = datetime.today() + timedelta(days=int(new_interval))
+    info['vocab_data'][lang_key][subsentence]['next_review'] = next_review.strftime('%Y-%m-%d')
+    
+    # Update rating
+    info['vocab_data'][lang_key][subsentence]['rating'] = ratings.get(rating, 1)
+    info['dues'][lang_key].pop(0)
+
+    get_next_card()
+
+def modify_selected_indices(sent_idx, word_idx):
+    if word_idx in info['selected_indices'][sent_idx]:
+        info['selected_indices'][sent_idx].remove(word_idx)
+    else:
+        info['selected_indices'][sent_idx].append(word_idx)
+
+    run_recent(info['lock'], info['next_fn'], (modify_selected_indices2, sent_idx), {'fn': modify_selected_indices2, 'args': (sent_idx, )})
+
+def modify_selected_indices2(sent_idx):  
+    new_groups = group_consecutive(info['selected_indices'][sent_idx])
+    # info['meanings_containers'][sent_idx].clear()
+    subsentences = []
+    meanings = []
+    
+
+    for word_indices in new_groups:
+        subsentence = " ".join(info['words'][sent_idx][idx] for idx in word_indices)
+        meaning = translate(subsentence)
+        subsentences.append(subsentence)
+        meanings.append(meaning)
+
+    for idx, (subsentence, meaning) in enumerate(zip(subsentences, meanings)):
+        info['meanings_containers'][sent_idx].update(
+            Element('li').add(
+                Element('div', attrs=dict(class_="pb-2"), leaf=subsentence + ' → '+ meaning)
+            ).add(
+                Element('div', attrs=dict(class_="flex justify-end gap-2")).add(
+                    Element('a', attrs=dict(class_="uk-btn uk-btn-default uk-btn-sm uk-btn-icon", href="#", onclick=f"socket.emit('exec_py_serialized', {serialize_to_base64({'fn': text_to_speech, 'args': [meaning, info['unknown_lang']]})!r})")).add(
+                        Element('uk-icon', attrs=dict(icon="volume-2"))
+                    )
+                ).add(
+                    Element('a', attrs=dict(class_="uk-btn uk-btn-default uk-btn-sm uk-btn-icon", href="#", onclick=f"socket.emit('exec_py_serialized', {serialize_to_base64({'fn': save_meaning, 'args': [subsentence, meaning, sent_idx]})!r})")).add(
+                        Element('uk-icon', attrs=dict(icon="save"))
+                    )
+                ).add(
+                    Element('a', attrs=dict(class_="uk-btn uk-btn-default uk-btn-sm uk-btn-icon", href="#", onclick=f"socket.emit('exec_py_serialized', {serialize_to_base64({'fn': delete_meaning, 'args': [subsentence,]})!r})")).add(
+                        Element('uk-icon', attrs=dict(icon="trash-2"))
+                    )
+                )
+            ), index=idx
+        )
+    
+    for ri in range(len(info['meanings_containers'][sent_idx].children_order)-1, idx, -1):
+        info['meanings_containers'][sent_idx].remove(ri)        
+
+
+
+# def modify_selected_indices(sent_idx, word_idx):
+#     old_groups = group_consecutive(info['selected_indices'][sent_idx])
+#     if word_idx in info['selected_indices'][sent_idx]:
+#         info['selected_indices'][sent_idx].remove(word_idx)
+#     else:
+#         info['selected_indices'][sent_idx].append(word_idx)
+#     new_groups = group_consecutive(info['selected_indices'][sent_idx])
+    
+#     needs_to_be_added = set(new_groups) - set(old_groups)
+#     indices_to_be_added = [new_groups.index(x) for x in needs_to_be_added]
+#     prev_keys = [(info['meanings_containers'][sent_idx].children_order[idx-1] if (len(info['meanings_containers'][sent_idx].children_order) > idx-1 >= 0) else None) for idx in indices_to_be_added]
+#     subsentences = []
+#     # meanings = []
+    
+#     for word_indices in needs_to_be_added:
+#         subsentence = " ".join(info['words'][sent_idx][idx] for idx in word_indices)
+#         # meaning = translate(subsentence)
+#         subsentences.append(subsentence)
+#         # meanings.append(meaning)
+
+#     needs_to_be_removed = set(old_groups) - set(new_groups)
+#     indices_to_be_removed = [old_groups.index(x) for x in needs_to_be_removed]
+#     keys_to_be_removed = [info['meanings_containers'][sent_idx].children_order[idx] for idx in indices_to_be_removed]
+#     [info['meanings_containers'][sent_idx].remove(key=k) for k in keys_to_be_removed]
+
+#     # + socket.emit('exec_py_serialized', {serialize_to_base64({'fn': translate, 'args': [subsentence,]})!r})
+#     for prev_key, subsentence in zip(prev_keys, subsentences):
+#         info['meanings_containers'][sent_idx].add(
+#             Element('li').add(
+#                 Element('link', attrs=dict(class_="pb-2", onload=f"console.log('Hello'); this.innerHTML = '{subsentence} → '"))
+#             ).add(
+#                 Element('div', attrs=dict(class_="flex justify-end gap-2")).add(
+#                     Element('button', attrs=dict(class_="uk-btn uk-btn-default uk-btn-sm uk-btn-icon", onclick=f"socket.emit('exec_py_serialized', {serialize_to_base64({'fn': text_to_speech, 'args': [{'fn': translate, 'args': [subsentence,]}, info['unknown_lang']]})!r})")).add(
+#                         Element('uk-icon', attrs=dict(icon="volume-2"))
+#                     )
+#                 ).add(
+#                     Element('button', attrs=dict(class_="uk-btn uk-btn-default uk-btn-sm uk-btn-icon")).add(
+#                         Element('uk-icon', attrs=dict(icon="save"))
+#                     )
+#                 ).add(
+#                     Element('button', attrs=dict(class_="uk-btn uk-btn-default uk-btn-sm uk-btn-icon")).add(
+#                         Element('uk-icon', attrs=dict(icon="trash-2"))
+#                     )
+#                 )
+#             )
+#             , after=prev_key
+#         )
+
+def group_consecutive(indices):
+    if not indices:
+        return []
+    indices.sort()
+    groups = []
+    current = [indices[0]]
+    for idx in indices[1:]:
+        if idx == current[-1] + 1:
+            current.append(idx)
+        else:
+            groups.append(tuple(current))
+            current = [idx]
+    groups.append(tuple(current))
+    return groups
+
+def process_text(text):
+    sentences = re.split(r'(?<=[.!?])\s+', text.strip())
+    info['translator'] = DeeplTranslator(api_key=DEEPL_API_KEY, source=info['known_lang'], target=info['unknown_lang'], use_free_api=True)
+    info['sentences'] = sentences
+
+    info['learn_container'].clear()
+    info['meanings_containers'].clear()
+    info['words'].clear()
+    
+    info['selected_indices'] = [[] for _ in range(len(sentences))]
+    for sent_idx, sentence in enumerate(sentences):
+        translation = translate(sentence)
+        [card := Element('div', attrs=dict(class_="uk-card uk-card-default uk-card-body")).add(
+            word_container := Element('div', attrs=dict(class_="flex flex-wrap items-center gap-0.5 uk-btn-xs pb-2"))
+        ).add(
+            Element('div', attrs=dict(class_="flex justify-between gap-2 pb-2")).add(
+                Element('div', attrs=dict(class_="py-1 text-muted-foreground"), leaf=translation)
+            ).add(
+                Element('a', attrs=dict(class_="uk-btn uk-btn-default uk-btn-sm uk-btn-icon self-end", href="#", onclick=f"socket.emit('exec_py_serialized', {serialize_to_base64({'fn': text_to_speech, 'args': [translation, info['unknown_lang']]})!r})")).add(
+                    Element('uk-icon', attrs=dict(icon="volume-2"))
+                )
+            )
+        ).add(
+            meanings_container := Element('ul', attrs=dict(class_="uk-list uk-list-striped"))
+        )]
+        
+        info['meanings_containers'].append(meanings_container)
+        words = sentence.split()
+        info['words'].append(words)
+
+        for word_idx, word in enumerate(words):
+            word_container.add(
+                Element('a', attrs=dict(class_="uk-btn", href="#", onclick=f"this.classList.toggle('uk-btn-primary'); socket.emit('exec_py_serialized', {serialize_to_base64({'fn': modify_selected_indices, 'args': [sent_idx, word_idx]})!r})"), leaf=word)
+            )
+            
+        info['learn_container'].add(card)
+
+
+def known_lang(lang):
+    info['known_lang'] = lang
+    calc_dues()
+
+def unknown_lang(lang):
+    info['unknown_lang'] = lang
+    calc_dues()
+
+if __name__ == '__main__':
+    socketio.run(app, debug=True, use_reloader=False)

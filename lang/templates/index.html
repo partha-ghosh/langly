@@ -1,0 +1,197 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, minimumScale=1.0, userScalable=false" />
+    <title>Language Learning App</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/core.min.css') }}" />
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/utilities.min.css') }}" />
+    <script src="{{ url_for('static', filename='js/core.iife.js') }}" type="module"></script>
+    <script src="{{ url_for('static', filename='js/icon.iife.js') }}" type="module"></script>
+    <script src="https://cdn.socket.io/4.8.1/socket.io.min.js" integrity="sha384-mkQ3/7FUtcGyoppY6bz/PORYoGqOl7/aSUMn2ymDOJcapfS6PHqxhRTMh1RR0Q6+" crossorigin="anonymous"></script>
+
+    <script>
+      function insertElement(parent_id, sibling_id, ele_html) {
+        // Get the sibling element
+        if (sibling_id) {
+          const sibling = document.getElementById(sibling_id);
+          if (!sibling) {
+            return;
+          }
+          sibling.insertAdjacentHTML("afterend", ele_html);
+        } else {
+          const parent = document.getElementById(parent_id);
+          if (!parent) {
+            return;
+          }
+          parent.insertAdjacentHTML("afterbegin", ele_html);
+        }
+      }
+
+      function updateElement(id, ele_html) {
+        const element = document.getElementById(id);
+        element.outerHTML = ele_html;
+      }
+
+      function removeElement(id) {
+        const element = document.getElementById(id);
+        element.remove();
+      }
+
+      // const socket = io({ autoConnect: false });
+      // socket.connect();
+
+      const socket = io();
+
+      socket.on("exec_js", function (code) {
+        eval(code);
+        // document.getElementById('content').insertAdjacentHTML('afterend', data);
+      });
+
+      socket.on('play', function (str) {
+        return new Audio(str).play();
+      });
+    </script>
+    <style>
+      :root {
+        --background: 0 0% 100%;
+        --foreground: 222.2 47.4% 11.2%;
+        --muted: 210 40% 96.1%;
+        --muted-foreground: 215.4 16.3% 46.9%;
+        --card: 0 0% 100%;
+        --card-foreground: 222.2 47.4% 11.2%;
+        --popover: 0 0% 100%;
+        --popover-foreground: 222.2 47.4% 11.2%;
+        --border: 214.3 31.8% 91.4%;
+        --input: 214.3 31.8% 91.4%;
+        --primary: 222.2 47.4% 11.2%;
+        --primary-foreground: 210 40% 98%;
+        --secondary: 210 40% 96.1%;
+        --secondary-foreground: 222.2 47.4% 11.2%;
+        --accent: 210 40% 96.1%;
+        --accent-foreground: 222.2 47.4% 11.2%;
+        --destructive: 0 100% 50%;
+        --destructive-foreground: 210 40% 98%;
+        --ring: 215 20.2% 65.1%;
+      }
+      .dark {
+        --background: 47 50% 10%;
+        --foreground: 47 5% 90%;
+        --card: 47 50% 10%;
+        --card-foreground: 47 5% 90%;
+        --popover: 47 50% 5%;
+        --popover-foreground: 47 5% 90%;
+        --primary: 47 100% 50%;
+        --primary-foreground: 0 0% 100%;
+        --secondary: 47 30% 20%;
+        --secondary-foreground: 0 0% 100%;
+        --muted: 9 30% 25%;
+        --muted-foreground: 47 5% 60%;
+        --accent: 9 30% 25%;
+        --accent-foreground: 47 5% 90%;
+        --destructive: 0 100% 50%;
+        --destructive-foreground: 47 5% 90%;
+        --border: 47 30% 50%;
+        --input: 47 30% 50%;
+        --ring: 47 100% 50%;
+        --radius: 0.5rem;
+      }
+    </style>
+  </head>
+  <body id="main-body">
+    <!-- Language selectors -->
+    <div>
+      <div class="uk-container uk-container-xs py-3 flex justify-between">
+        <h1 class="uk-h1">Langly</h1>
+        <a class="uk-btn uk-btn-sm uk-btn-ghost uk-btn-icon" href="#"><uk-icon icon="ellipsis"></uk-icon></a>
+      </div>
+      <hr class="uk-hr" />
+    </div>
+    <div class="uk-container uk-container-xs">
+      <div class="grid grid-cols-2 gap-3 py-3">
+        <div>
+          <label class="uk-form-label" for="known-lang">Language you know</label>
+          <uk-select id="known-lang" cls-custom="button: uk-input-fake justify-between w-full; dropdown: w-full" icon onclick="socket.emit('exec_py', {fn: 'known_lang', args: [document.getElementById('known-lang').selected.value]})">
+            <select hidden>
+              <option value="en" selected>English</option>
+              <option value="de" >German</option>
+            </select>
+          </uk-select>
+        </div>
+
+        <div>
+          <label class="uk-form-label" for="unknown-lang">Language to learn</label>
+          <uk-select id="unknown-lang" cls-custom="button: uk-input-fake justify-between w-full; dropdown: w-full" icon onclick="socket.emit('exec_py', {fn: 'known_lang', args: [document.getElementById('known-lang').selected.value]})">
+            <select hidden>
+              <option value="en">English</option>
+              <option value="de" selected>German</option>
+            </select>
+          </uk-select>
+        </div>
+      </div>
+
+      <!-- Tabs -->
+      <ul class="uk-tab-alt uk-margin" data-uk-switcher="animation: uk-anmt-fade">
+        <li class="uk-active">
+          <a href="#"><uk-icon icon="graduation-cap" class="pe-1"></uk-icon> Learn</a>
+        </li>
+        <li>
+          <a href="#" onclick="socket.emit('exec_py', {fn: 'calc_dues', args: []});"><uk-icon icon="brain" class="pe-1"></uk-icon>Recall</a>
+        </li>
+        <li>
+          <a href="#" onclick="socket.emit('exec_py', {fn: 'update_vocab_list', args: ['']});"><uk-icon icon="book-a" class="pe-1"></uk-icon>Vocabulary</a>
+        </li>
+      </ul>
+      <!-- <ul uk-tab class="uk-tab uk-margin">
+      <li class="uk-active"><a href="#">Learn</a></li>
+      <li><a href="#">Recall</a></li>
+      <li><a href="#">Vocabulary</a></li>
+    </ul> -->
+
+      <ul class="uk-switcher mt-3">
+        <!-- Learn tab -->
+        <li>
+          <textarea id="learnInput" class="uk-textarea" rows="4" placeholder="Type your phrase..."></textarea>
+          <div class="flex justify-center py-3">
+            <a id="learnSubmit" class="uk-btn uk-btn-default" href="#" onclick="socket.emit('exec_py', {fn: 'process_text', args: [document.getElementById('learnInput').value]})">Submit</a>
+          </div>
+
+          <div id="learn-container" class="grid gap-y-3">
+          </div>
+        </li>
+
+        <!-- Recall tab -->
+        <li>
+          <div class="uk-card uk-card-default uk-card-body my-3 text-center"><span id="question"></span></div>
+          <div id="showAnswer" class="flex justify-center py-3">
+            <a class="uk-btn uk-btn-default" type="button" href="#" data-uk-toggle="target: .toggle-usage; animation: uk-anmt-fade">Show Answer</a>
+          </div>
+          <div class="uk-card uk-card-default uk-card-body my-3 text-center toggle-usage" id="fake-answer-container">...</div>
+          <div class="uk-card uk-card-default uk-card-body my-3 text-center toggle-usage" id="answer-container" hidden><span id="answer"></span></div>
+          <div class="flex justify-center gap-3 py-3">
+            <a class="uk-btn uk-btn-secondary" href="#" onclick="document.getElementById('answer-container').setAttribute('hidden', '');document.getElementById('examples-container').setAttribute('hidden', '');document.getElementById('fake-answer-container').removeAttribute('hidden'); socket.emit('exec_py', {fn: 'update_spaced_repetition', args: ['easy']});" >Easy</a>
+            <a class="uk-btn uk-btn-primary" href="#" onclick="document.getElementById('answer-container').setAttribute('hidden', '');document.getElementById('examples-container').setAttribute('hidden', '');document.getElementById('fake-answer-container').removeAttribute('hidden'); socket.emit('exec_py', {fn: 'update_spaced_repetition', args: ['medium']});">Medium</a>
+            <a class="uk-btn uk-btn-destructive" href="#" onclick="document.getElementById('answer-container').setAttribute('hidden', '');document.getElementById('examples-container').setAttribute('hidden', '');document.getElementById('fake-answer-container').removeAttribute('hidden'); socket.emit('exec_py', {fn: 'update_spaced_repetition', args: ['hard']});" >Hard</a>
+          </div>
+
+          <div class="toggle-usage" id="examples-container" hidden>
+            <div class="py-3">
+              <h3 class="uk-card-title mb-1">Examples</h3>
+              <hr class="uk-hr" />
+            </div>
+
+            <ul class="uk-list uk-list-divider" id="examples">
+            </ul>
+          </div>
+        </li>
+
+        <!-- Vocabulary tab -->
+        <li>
+          <input class="uk-input mb-3" type="text" placeholder="Search" aria-label="Search" onkeyup="socket.emit('exec_py', {fn: 'update_vocab_list', args: [this.value]});" />
+          <div class="space-y-2" id="search_results">
+          </div>
+        </li>
+      </ul>
+    </div>
+  </body>
+</html>
