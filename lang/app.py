@@ -231,7 +231,7 @@ def get_next_card():
     related_examples = random.sample(info['vocab_data'][lang_key][subsentence]['examples'], min(10, len(info['vocab_data'][lang_key][subsentence]['examples'])))
 
     info['question_container'].update(Element('span', leaf=subsentence), index=0)
-    info['answer_container'].update(Element('span', leaf=meaning), index=0).add(
+    info['answer_container'].update(Element('span', leaf=meaning + ' '), index=0).add(
         Element('a', attrs=dict(class_="uk-btn uk-btn-default uk-btn-sm uk-btn-icon", onclick=f"socket.emit('exec_py_serialized', {serialize_to_base64({'fn': text_to_speech, 'args': [meaning, info['unknown_lang']]})!r})")).add(
             Element('uk-icon', attrs=dict(icon="volume-2"))
         )
@@ -244,9 +244,9 @@ def get_next_card():
                 Element('p', leaf=sentence)
             ).add(
                 Element('div').add(
-                    Element('p', attrs=dict(class_="py-1 text-muted-foreground"), leaf=translation)
+                    Element('span', attrs=dict(class_="py-1 text-muted-foreground"), leaf=translation + ' ')
                 ).add(
-                    Element('a', attrs=dict(class_="uk-btn uk-btn-default uk-btn-sm uk-btn-icon", onclick=f"socket.emit('exec_py_serialized', {serialize_to_base64({'fn': text_to_speech, 'args': [meaning, info['unknown_lang']]})!r})")).add(
+                    Element('a', attrs=dict(class_="uk-btn uk-btn-default uk-btn-sm uk-btn-icon", onclick=f"socket.emit('exec_py_serialized', {serialize_to_base64({'fn': text_to_speech, 'args': [translation, info['unknown_lang']]})!r})")).add(
                         Element('uk-icon', attrs=dict(icon="volume-2"))
                     )
                 )
