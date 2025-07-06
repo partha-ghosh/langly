@@ -100,9 +100,7 @@ def deserialize_from_base64(base64_str):
     return pickle.loads(pickled_data)
 
 def save_vocab():
-    print('at exit', info['vocab_data'])
     with open(f'{root_save_dir}/vocabulary.json', 'w') as f:
-        print('at exit2', info['vocab_data'])
         json.dump(info['vocab_data'], f)
 atexit.register(save_vocab)
 
@@ -110,7 +108,6 @@ def update_vocab_list(search_string):
     if (not search_string and len(info['search_result_container'].children_order) == 0) \
         or (search_string and len(info['search_result_container'].children_order) > 0):
 
-        print('ok')
         lang_key = f"{info['known_lang']}2{info['unknown_lang']}"
         info['vocab_data'].setdefault(lang_key, dict())
 
@@ -195,7 +192,6 @@ def save_meaning(subsentence, meaning, sent_idx):
     )
     if len(info['vocab_data'][lang_key][subsentence]['examples']) > 100:
         info['vocab_data'][lang_key][subsentence]['examples'] = info['vocab_data'][lang_key][subsentence]['examples'][-100:]
-    print(info['vocab_data'])
 
 def delete_meaning(subsentence):
     lang_key = f"{info['known_lang']}2{info['unknown_lang']}"
@@ -217,7 +213,6 @@ def calc_dues():
             if next_review <= today:
                 info['dues'][lang_key].append(subsentence)
         random.shuffle(info['dues'][lang_key])
-        print('calc_dues', info['dues'][lang_key])
 
         get_next_card()
 
@@ -227,7 +222,6 @@ def get_next_card():
         info['question_container'].update(Element('span', leaf='No more cards due for review! 🎉'), index=0)
         return 0
     subsentence = info['dues'][lang_key][0]
-    print('get_next_card', info['dues'][lang_key])
     meaning = info['vocab_data'][lang_key][subsentence]['translation']
     related_examples = random.sample(info['vocab_data'][lang_key][subsentence]['examples'], min(10, len(info['vocab_data'][lang_key][subsentence]['examples'])))
 
