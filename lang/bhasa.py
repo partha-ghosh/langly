@@ -14,6 +14,7 @@ from gtts import gTTS
 import atexit
 from api_keys import DEEPL_API_KEY
 
+
 app = dash.Dash(__name__, external_stylesheets=['https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/css/bootstrap.min.css'])
 root_save_dir = '.'
 # app.config['suppress_callback_exceptions'] = True
