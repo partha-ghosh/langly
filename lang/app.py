@@ -56,6 +56,7 @@ from datetime import datetime, timedelta
 import random
 import atexit
 import re
+import math
 from api_keys import DEEPL_API_KEY
 
 root_save_dir = '.'
@@ -154,7 +155,9 @@ def update_vocab_list(search_string):
 
             
 
-def translate(text):
+def translate(text, source=info['known_lang'], target=info['unknown_lang']):
+    print(source, target)
+    info['translator'] = DeeplTranslator(api_key=DEEPL_API_KEY, source=source, target=target, use_free_api=True)
     translation = info['translation_cache'].get(text, None)
 
     if translation is None:
@@ -179,10 +182,17 @@ def text_to_speech(text, lang):
     # return data
 
 def save_meaning(subsentence, meaning, sent_idx):
-    subsentence = re.sub(r'[^a-zA-Z0-9 ]', '', subsentence)
 
     lang_key = f"{info['known_lang']}2{info['unknown_lang']}"
+
     info['vocab_data'].setdefault(lang_key, dict())
+
+    if sent_idx % 2 == 1: 
+        tmp = subsentence
+        subsentence = meaning
+        meaning = tmp
+        subsentence = re.sub(r'[^a-zA-Z0-9 ]', '', subsentence)
+
 
     if not info['vocab_data'][lang_key].get(subsentence, None):
         info['vocab_data'][lang_key][subsentence] = dict(
@@ -192,14 +202,21 @@ def save_meaning(subsentence, meaning, sent_idx):
             examples=[]
         )
     info['vocab_data'][lang_key][subsentence]['examples'].append(
-        [info['sentences'][sent_idx], translate(info['sentences'][sent_idx])]
+        [info['sentences'][sent_idx], info['sentences'][sent_idx+1]] if (sent_idx % 2 == 0) else \
+        [info['sentences'][sent_idx-1], info['sentences'][sent_idx]]
     )
+
     if len(info['vocab_data'][lang_key][subsentence]['examples']) > 100:
         info['vocab_data'][lang_key][subsentence]['examples'] = info['vocab_data'][lang_key][subsentence]['examples'][-100:]
 
-def delete_meaning(subsentence):
+def delete_meaning(subsentence, sent_idx):
     subsentence = re.sub(r'[^a-zA-Z0-9 ]', '', subsentence)
-    lang_key = f"{info['known_lang']}2{info['unknown_lang']}"
+    
+    if sent_idx % 2 == 0: 
+        lang_key = f"{info['known_lang']}2{info['unknown_lang']}"
+    else:
+        lang_key = f"{info['unknown_lang']}2{info['known_lang']}"
+
     info['vocab_data'].setdefault(lang_key, dict())
     if info['vocab_data'][lang_key].get(subsentence, None):
         if len(info['vocab_data'][lang_key][subsentence]['examples']) == 1:
@@ -283,26 +300,34 @@ def modify_selected_indices(sent_idx, word_idx):
     run_recent(info['lock'], info['next_fn'], (modify_selected_indices2, sent_idx), {'fn': modify_selected_indices2, 'args': (sent_idx, )})
 
 def modify_selected_indices2(sent_idx):  
-    new_groups = group_consecutive(info['selected_indices'][sent_idx])
     # info['meanings_containers'][sent_idx].clear()
     subsentences = []
     meanings = []
     
+    print(sent_idx)
+    mci = int(math.floor(sent_idx/2))
+    for si in ([sent_idx, sent_idx+1] if (sent_idx % 2 == 0) else [sent_idx-1, sent_idx]):
+        new_groups = group_consecutive(info['selected_indices'][si])
+        for word_indices in new_groups:
+            subsentence = " ".join(info['words'][si][idx] for idx in word_indices)
+            if si % 2 == 0:
+                meaning = translate(subsentence)
+            else:
+                meaning = translate(subsentence, source=info['unknown_lang'], target=info['known_lang'])
 
-    for word_indices in new_groups:
-        subsentence = " ".join(info['words'][sent_idx][idx] for idx in word_indices)
-        meaning = translate(subsentence)
-        subsentences.append(subsentence)
-        meanings.append(meaning)
-
+            subsentences.append(subsentence)
+            meanings.append(meaning)
+    print(sent_idx, subsentence, meaning)
+    
     idx = -1
     for idx, (subsentence, meaning) in enumerate(zip(subsentences, meanings)):
-        info['meanings_containers'][sent_idx].update(
+        info['meanings_containers'][mci].update(
             Element('li').add(
-                Element('div', attrs=dict(class_="pb-2"), leaf=subsentence + ' → '+ meaning)
+                Element('div', attrs=dict(class_="pb-2"), leaf=subsentence + ' → '+ meaning) if (sent_idx%2==0) else \
+                Element('div', attrs=dict(class_="pb-2"), leaf=meaning + ' → '+ subsentence)
             ).add(
                 Element('div', attrs=dict(class_="flex justify-end gap-2")).add(
-                    Element('a', attrs=dict(class_="uk-btn uk-btn-default uk-btn-sm uk-btn-icon", onclick=f"socket.emit('exec_py_serialized', {serialize_to_base64({'fn': text_to_speech, 'args': [meaning, info['unknown_lang']]})!r})")).add(
+                    Element('a', attrs=dict(class_="uk-btn uk-btn-default uk-btn-sm uk-btn-icon", onclick=f"socket.emit('exec_py_serialized', {serialize_to_base64({'fn': text_to_speech, 'args': [meaning  if (sent_idx%2==0) else subsentence, info['unknown_lang']]})!r})")).add(
                         Element('uk-icon', attrs=dict(icon="volume-2"))
                     )
                 ).add(
@@ -310,65 +335,16 @@ def modify_selected_indices2(sent_idx):
                         Element('uk-icon', attrs=dict(icon="save"))
                     )
                 ).add(
-                    Element('a', attrs=dict(class_="uk-btn uk-btn-default uk-btn-sm uk-btn-icon", onclick=f"socket.emit('exec_py_serialized', {serialize_to_base64({'fn': delete_meaning, 'args': [subsentence,]})!r})")).add(
+                    Element('a', attrs=dict(class_="uk-btn uk-btn-default uk-btn-sm uk-btn-icon", onclick=f"socket.emit('exec_py_serialized', {serialize_to_base64({'fn': delete_meaning, 'args': [subsentence, sent_idx]})!r})")).add(
                         Element('uk-icon', attrs=dict(icon="trash-2"))
                     )
                 )
             ), index=idx
         )
     
-    for ri in range(len(info['meanings_containers'][sent_idx].children_order)-1, idx, -1):
-        info['meanings_containers'][sent_idx].remove(ri)        
+    for ri in range(len(info['meanings_containers'][mci].children_order)-1, idx, -1):
+        info['meanings_containers'][mci].remove(ri)        
 
-
-
-# def modify_selected_indices(sent_idx, word_idx):
-#     old_groups = group_consecutive(info['selected_indices'][sent_idx])
-#     if word_idx in info['selected_indices'][sent_idx]:
-#         info['selected_indices'][sent_idx].remove(word_idx)
-#     else:
-#         info['selected_indices'][sent_idx].append(word_idx)
-#     new_groups = group_consecutive(info['selected_indices'][sent_idx])
-    
-#     needs_to_be_added = set(new_groups) - set(old_groups)
-#     indices_to_be_added = [new_groups.index(x) for x in needs_to_be_added]
-#     prev_keys = [(info['meanings_containers'][sent_idx].children_order[idx-1] if (len(info['meanings_containers'][sent_idx].children_order) > idx-1 >= 0) else None) for idx in indices_to_be_added]
-#     subsentences = []
-#     # meanings = []
-    
-#     for word_indices in needs_to_be_added:
-#         subsentence = " ".join(info['words'][sent_idx][idx] for idx in word_indices)
-#         # meaning = translate(subsentence)
-#         subsentences.append(subsentence)
-#         # meanings.append(meaning)
-
-#     needs_to_be_removed = set(old_groups) - set(new_groups)
-#     indices_to_be_removed = [old_groups.index(x) for x in needs_to_be_removed]
-#     keys_to_be_removed = [info['meanings_containers'][sent_idx].children_order[idx] for idx in indices_to_be_removed]
-#     [info['meanings_containers'][sent_idx].remove(key=k) for k in keys_to_be_removed]
-
-#     # + socket.emit('exec_py_serialized', {serialize_to_base64({'fn': translate, 'args': [subsentence,]})!r})
-#     for prev_key, subsentence in zip(prev_keys, subsentences):
-#         info['meanings_containers'][sent_idx].add(
-#             Element('li').add(
-#                 Element('link', attrs=dict(class_="pb-2", onload=f"console.log('Hello'); this.innerHTML = '{subsentence} → '"))
-#             ).add(
-#                 Element('div', attrs=dict(class_="flex justify-end gap-2")).add(
-#                     Element('button', attrs=dict(class_="uk-btn uk-btn-default uk-btn-sm uk-btn-icon", onclick=f"socket.emit('exec_py_serialized', {serialize_to_base64({'fn': text_to_speech, 'args': [{'fn': translate, 'args': [subsentence,]}, info['unknown_lang']]})!r})")).add(
-#                         Element('uk-icon', attrs=dict(icon="volume-2"))
-#                     )
-#                 ).add(
-#                     Element('button', attrs=dict(class_="uk-btn uk-btn-default uk-btn-sm uk-btn-icon")).add(
-#                         Element('uk-icon', attrs=dict(icon="save"))
-#                     )
-#                 ).add(
-#                     Element('button', attrs=dict(class_="uk-btn uk-btn-default uk-btn-sm uk-btn-icon")).add(
-#                         Element('uk-icon', attrs=dict(icon="trash-2"))
-#                     )
-#                 )
-#             )
-#             , after=prev_key
-#         )
 
 def group_consecutive(indices):
     if not indices:
@@ -387,21 +363,24 @@ def group_consecutive(indices):
 
 def process_text(text):
     sentences = re.split(r'(?<=[.!?])\s+', text.strip())
-    info['translator'] = DeeplTranslator(api_key=DEEPL_API_KEY, source=info['known_lang'], target=info['unknown_lang'], use_free_api=True)
-    info['sentences'] = sentences
 
+    info['sentences'].clear()
     info['learn_container'].clear()
     info['meanings_containers'].clear()
     info['words'].clear()
     
-    info['selected_indices'] = [[] for _ in range(len(sentences))]
+    info['selected_indices'] = [[] for _ in range(2*len(sentences))]
+    
     for sent_idx, sentence in enumerate(sentences):
         translation = translate(sentence)
+        info['sentences'].extend([sentence, translation])
+
         [card := Element('div', attrs=dict(class_="uk-card uk-card-default uk-card-body")).add(
             word_container := Element('div', attrs=dict(class_="flex flex-wrap items-center gap-0.5 uk-btn-xs pb-2"))
         ).add(
             Element('div', attrs=dict(class_="flex justify-between gap-2 pb-2")).add(
-                Element('div', attrs=dict(class_="py-1 text-muted-foreground"), leaf=translation)
+                translated_word_container := Element('div', attrs=dict(class_="flex flex-wrap items-center gap-0.5 uk-btn-xs pb-2"))
+                # Element('div', attrs=dict(class_="py-1 text-muted-foreground"), leaf=translation)
             ).add(
                 Element('a', attrs=dict(class_="uk-btn uk-btn-default uk-btn-sm uk-btn-icon self-end", onclick=f"socket.emit('exec_py_serialized', {serialize_to_base64({'fn': text_to_speech, 'args': [translation, info['unknown_lang']]})!r})")).add(
                     Element('uk-icon', attrs=dict(icon="volume-2"))
@@ -417,9 +396,16 @@ def process_text(text):
 
         for word_idx, word in enumerate(words):
             word_container.add(
-                Element('a', attrs=dict(class_="uk-btn", onclick=f"this.classList.toggle('uk-btn-primary'); socket.emit('exec_py_serialized', {serialize_to_base64({'fn': modify_selected_indices, 'args': [sent_idx, word_idx]})!r})"), leaf=word)
+                Element('a', attrs=dict(class_="uk-btn", onclick=f"this.classList.toggle('uk-btn-primary'); socket.emit('exec_py_serialized', {serialize_to_base64({'fn': modify_selected_indices, 'args': [2*sent_idx, word_idx]})!r})"), leaf=word)
             )
             
+        translated_words = translation.split()
+        info['words'].append(translated_words)
+
+        for word_idx, word in enumerate(translated_words):
+            translated_word_container.add(
+                Element('a', attrs=dict(class_="uk-btn", onclick=f"this.classList.toggle('uk-btn-primary'); socket.emit('exec_py_serialized', {serialize_to_base64({'fn': modify_selected_indices, 'args': [2*sent_idx+1, word_idx]})!r})"), leaf=word)
+            )
         info['learn_container'].add(card)
 
 
