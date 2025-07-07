@@ -6,6 +6,54 @@
     <title>Language Learning App</title>
     <link rel="stylesheet" href="{{ url_for('static', filename='css/core.min.css') }}" />
     <link rel="stylesheet" href="{{ url_for('static', filename='css/utilities.min.css') }}" />
+    <style>
+      :root {
+        --background: 0 0% 100%;
+        --foreground: 222.2 47.4% 11.2%;
+        --muted: 210 40% 96.1%;
+        --muted-foreground: 215.4 16.3% 46.9%;
+        --card: 0 0% 100%;
+        --card-foreground: 222.2 47.4% 11.2%;
+        --popover: 0 0% 100%;
+        --popover-foreground: 222.2 47.4% 11.2%;
+        --border: 214.3 31.8% 91.4%;
+        --input: 214.3 31.8% 91.4%;
+        --primary: 222.2 47.4% 11.2%;
+        --primary-foreground: 210 40% 98%;
+        --secondary: 210 40% 96.1%;
+        --secondary-foreground: 222.2 47.4% 11.2%;
+        --accent: 210 40% 96.1%;
+        --accent-foreground: 222.2 47.4% 11.2%;
+        --destructive: 0 100% 50%;
+        --destructive-foreground: 210 40% 98%;
+        --ring: 215 20.2% 65.1%;
+
+        --uk-offcanvas-bar-width: 1000px;
+      }
+      .dark {
+        --background: 47 50% 10%;
+        --foreground: 47 5% 90%;
+        --card: 47 50% 10%;
+        --card-foreground: 47 5% 90%;
+        --popover: 47 50% 5%;
+        --popover-foreground: 47 5% 90%;
+        --primary: 47 100% 50%;
+        --primary-foreground: 0 0% 100%;
+        --secondary: 47 30% 20%;
+        --secondary-foreground: 0 0% 100%;
+        --muted: 9 30% 25%;
+        --muted-foreground: 47 5% 60%;
+        --accent: 9 30% 25%;
+        --accent-foreground: 47 5% 90%;
+        --destructive: 0 100% 50%;
+        --destructive-foreground: 47 5% 90%;
+        --border: 47 30% 50%;
+        --input: 47 30% 50%;
+        --ring: 47 100% 50%;
+        --radius: 0.5rem;
+      }
+    </style>
+    
     <script src="{{ url_for('static', filename='js/core.iife.js') }}" type="module"></script>
     <script src="{{ url_for('static', filename='js/icon.iife.js') }}" type="module"></script>
     <script src="https://cdn.socket.io/4.8.1/socket.io.min.js" integrity="sha384-mkQ3/7FUtcGyoppY6bz/PORYoGqOl7/aSUMn2ymDOJcapfS6PHqxhRTMh1RR0Q6+" crossorigin="anonymous"></script>
@@ -52,93 +100,63 @@
         return new Audio(str).play();
       });
     </script>
-    <style>
-      :root {
-        --background: 0 0% 100%;
-        --foreground: 222.2 47.4% 11.2%;
-        --muted: 210 40% 96.1%;
-        --muted-foreground: 215.4 16.3% 46.9%;
-        --card: 0 0% 100%;
-        --card-foreground: 222.2 47.4% 11.2%;
-        --popover: 0 0% 100%;
-        --popover-foreground: 222.2 47.4% 11.2%;
-        --border: 214.3 31.8% 91.4%;
-        --input: 214.3 31.8% 91.4%;
-        --primary: 222.2 47.4% 11.2%;
-        --primary-foreground: 210 40% 98%;
-        --secondary: 210 40% 96.1%;
-        --secondary-foreground: 222.2 47.4% 11.2%;
-        --accent: 210 40% 96.1%;
-        --accent-foreground: 222.2 47.4% 11.2%;
-        --destructive: 0 100% 50%;
-        --destructive-foreground: 210 40% 98%;
-        --ring: 215 20.2% 65.1%;
-      }
-      .dark {
-        --background: 47 50% 10%;
-        --foreground: 47 5% 90%;
-        --card: 47 50% 10%;
-        --card-foreground: 47 5% 90%;
-        --popover: 47 50% 5%;
-        --popover-foreground: 47 5% 90%;
-        --primary: 47 100% 50%;
-        --primary-foreground: 0 0% 100%;
-        --secondary: 47 30% 20%;
-        --secondary-foreground: 0 0% 100%;
-        --muted: 9 30% 25%;
-        --muted-foreground: 47 5% 60%;
-        --accent: 9 30% 25%;
-        --accent-foreground: 47 5% 90%;
-        --destructive: 0 100% 50%;
-        --destructive-foreground: 47 5% 90%;
-        --border: 47 30% 50%;
-        --input: 47 30% 50%;
-        --ring: 47 100% 50%;
-        --radius: 0.5rem;
-      }
-    </style>
   </head>
-  <body id="main-body">
+  <body id="main-body" class="bg-background font-geist-sans text-foreground antialiased">
     <!-- Language selectors -->
     <div>
       <div class="uk-container uk-container-xs py-3 flex justify-between">
         <h1 class="uk-h1">Langly</h1>
-        <a class="uk-btn uk-btn-sm uk-btn-ghost uk-btn-icon"><uk-icon icon="ellipsis"></uk-icon></a>
+        <a class="uk-btn uk-btn-sm uk-btn-ghost uk-btn-icon" type="button" data-uk-toggle="target: #offcanvas-overlay"><uk-icon icon="ellipsis"></uk-icon></a>
+      </div>
+      <div id="offcanvas-overlay" data-uk-offcanvas="overlay: true">
+        <div class="uk-offcanvas-bar p-4">
+          <button
+            class="uk-offcanvas-close absolute right-4 top-4"
+            type="button"
+            data-uk-close
+          ></button>
+      
+          <h3 class="uk-h3">Settings</h3>
+      
+          <div class="mt-4">
+            <uk-theme-switcher id="theme-switcher">
+              <select hidden>
+                <optgroup data-key="mode" label="Mode">
+                  <option data-icon="sun" value="light">Light</option>
+                  <option data-icon="moon" value="dark">Dark</option>
+                </optgroup>
+              </select>
+            </uk-theme-switcher>
+
+            <div class="mt-4">
+              <label class="uk-form-label">DeepL API</label>
+              <div class="flex gap-2">
+                <div class="grow">
+                  <input
+                    class="uk-input max-w-sm"
+                    type="text"
+                    placeholder="DeepL API Key"
+                    aria-label="Custom controls"
+                  />
+                </div>
+                <div class="flex-none">
+                  <button class="uk-btn uk-btn-default">Save</button>
+                </div>
+              </div>
+            </div>
+
+          </div>
+
+        </div>
       </div>
       <hr class="uk-hr" />
     </div>
     <div class="uk-container uk-container-xs">
       <div class="grid grid-cols-2 gap-3 py-3">
-        <div>
-          <label class="uk-form-label" for="known-lang">Language you know</label>
-          <uk-select id="known-lang" cls-custom="button: uk-input-fake justify-between w-full; dropdown: w-full" icon onclick="socket.emit('exec_py', {fn: 'known_lang', args: [document.getElementById('known-lang').selected.value]})">
-            <select hidden>
-              <option value="en" selected>English</option>
-              <option value="de" >German</option>
-              <option value="fr" >French</option>
-              <option value="es" >Spanish</option>
-              <option value="it" >Italian</option>
-              <option value="ru" >Russian</option>
-              <option value="uk" >Ukrainian</option>
-              <option value="pl" >Polish</option>
-            </select>
-          </uk-select>
+        <div id="known-lang-container">
         </div>
 
-        <div>
-          <label class="uk-form-label" for="unknown-lang">Language to learn</label>
-          <uk-select id="unknown-lang" cls-custom="button: uk-input-fake justify-between w-full; dropdown: w-full" icon onclick="socket.emit('exec_py', {fn: 'unknown_lang', args: [document.getElementById('unknown-lang').selected.value]})">
-            <select hidden>
-              <option value="en">English</option>
-              <option value="de" selected>German</option>
-              <option value="fr" >French</option>
-              <option value="es" >Spanish</option>
-              <option value="it" >Italian</option>
-              <option value="ru" >Russian</option>
-              <option value="uk" >Ukrainian</option>
-              <option value="pl" >Polish</option>
-            </select>
-          </uk-select>
+        <div id="unknown-lang-container">
         </div>
       </div>
 

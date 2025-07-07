@@ -1,49 +1,6 @@
 from flask import Flask, render_template
 from flask_socketio import SocketIO, emit
 from utils import Element
-
-app = Flask(__name__)
-app.config['SECRET_KEY'] = 'your_secret_key'
-socketio = SocketIO(app)
-
-@app.route('/')
-def index():
-    return render_template('index.html')
-
-@socketio.on('connect')
-def handle_connect():
-    print('Client connected!')
-
-@socketio.on('exec_py')
-def handle_exec_py(data):
-
-    if data['fn'] == 'process_text':
-        run_recent(info['lock'], info['next_fn'], (globals()[data['fn']], data['args']), {'fn': globals()[data['fn']], 'args': data['args']})
-    else:
-        return globals()[data['fn']](*data['args'])
-    # emit('resp', {'message': '<h2>Hello</h2>'})
-
-@socketio.on('exec_py_serialized')
-def handle_exec_py_serialized(data):
-    data = deserialize_from_base64(data)
-    return data['fn'](*data['args'])
-
-def run_recent(lock, next, identifier, fn_data):
-    identifier = serialize_to_base64(identifier)
-
-    next[identifier] = fn_data
-
-    while lock.get(identifier, None):
-        time.sleep(0.01)
-    
-    lock[identifier] = True
-    fn = fn_data['fn']
-    args = fn_data.get('args', tuple())
-    kwargs = fn_data.get('kwargs', dict())
-    x = fn(*args, **kwargs)  
-    lock[identifier] = False    
-    return x
-
 import re
 from deep_translator import GoogleTranslator, MyMemoryTranslator, DeeplTranslator
 from gtts import gTTS
@@ -59,14 +16,39 @@ import re
 import math
 from api_keys import DEEPL_API_KEY
 
+app = Flask(__name__)
+app.config['SECRET_KEY'] = 'your_secret_key'
+socketio = SocketIO(app)
+
+def load_json(path_to_json):
+    try:
+        with open(path_to_json, 'r') as f:
+            return json.load(f) 
+    except:
+        save_json(path_to_json, dict())
+        return load_json(path_to_json)
+
+def save_json(path_to_json, data):
+    with open(path_to_json, 'w') as f:
+        json.dump(data, f)
+
 root_save_dir = '.'
 try:
-    with open(f'{root_save_dir}/vocabulary.json', 'r') as f:
-        vocab_data = json.load(f)
+    vocab_data = load_json(f'{root_save_dir}/vocabulary.json')
 except FileNotFoundError:
     vocab_data = dict()
 
 info = dict(
+    supported_langs=dict(
+        English='en',
+        German='de',
+        French='fr',
+        Spanish='es',
+        Italian='it',
+        Russian='ru',
+        Ukranian='uk',
+        Polish='pl'
+    ),
     known_lang='en',
     unknown_lang='de',
     vocab_data = vocab_data,
@@ -89,6 +71,7 @@ info = dict(
 
 )
 
+
 def serialize_to_base64(obj):
     """Serialize any Python object to a Base64 string."""
     pickled_data = pickle.dumps(obj)
@@ -102,8 +85,8 @@ def deserialize_from_base64(base64_str):
     return pickle.loads(pickled_data)
 
 def save_vocab():
-    with open(f'{root_save_dir}/vocabulary.json', 'w') as f:
-        json.dump(info['vocab_data'], f)
+    save_json(f'{root_save_dir}/vocabulary.json', info['vocab_data'])
+
 atexit.register(save_vocab)
 
 def update_vocab_list(search_string):
@@ -407,12 +390,87 @@ def process_text(text):
 
 
 def known_lang(lang):
-    info['known_lang'] = lang
+    config = load_json(f'{root_save_dir}/config.json')
+    config['known_lang'] = lang
+    save_json(f'{root_save_dir}/config.json', config)
+    info['known_lang'] = info['supported_langs'][lang]
     calc_dues()
 
 def unknown_lang(lang):
-    info['unknown_lang'] = lang
+    config = load_json(f'{root_save_dir}/config.json')
+    config['unknown_lang'] = lang
+    save_json(f'{root_save_dir}/config.json', config)
+    info['unknown_lang'] = info['supported_langs'][lang]
     calc_dues()
+
+
+
+@app.route('/')
+def index():
+    return render_template('index.html')
+
+@socketio.on('connect')
+def handle_connect():
+    config = load_json(f'{root_save_dir}/config.json')
+    
+    known_lang = config.get('known_lang', 'English')
+    unknown_lang = config.get('unknown_lang', 'German')
+
+    info['known_lang'] = info['supported_langs'][known_lang]
+    info['unknown_lang'] = info['supported_langs'][unknown_lang]
+
+    for container, id, default_lang in [('known-lang-container', 'known_lang', known_lang), ('unknown-lang-container', 'unknown_lang', unknown_lang)]:
+        div = Element('span')
+        div.add(
+            Element('label', attrs=dict(class_="uk-form-label"), leaf="Language you know")
+        ).add(
+            Element('div', attrs=dict(class_="uk-form-controls")).add(
+                uk_sel := Element('uk-select', attrs=dict(value=default_lang, cls__custom="button: uk-input-fake justify-between w-full; dropdown: w-full", icon="", onclick="socket.emit('exec_py', {{fn: '{id}', args: [document.getElementById('{id}').selected.value]}})".format(id=id))).add(
+                    se := Element('select', attrs=dict(hidden=""))
+                )
+            )
+        )
+
+        uk_sel.key = id
+
+        for lang in info['supported_langs']:
+            se.add(Element('option', leaf=lang))
+        
+        parent = Element('div')
+        parent.key=container
+        parent.update(div, index=0)
+
+    print('Client connected!')
+
+@socketio.on('exec_py')
+def handle_exec_py(data):
+
+    if data['fn'] == 'process_text':
+        run_recent(info['lock'], info['next_fn'], (globals()[data['fn']], data['args']), {'fn': globals()[data['fn']], 'args': data['args']})
+    else:
+        return globals()[data['fn']](*data['args'])
+    # emit('resp', {'message': '<h2>Hello</h2>'})
+
+@socketio.on('exec_py_serialized')
+def handle_exec_py_serialized(data):
+    data = deserialize_from_base64(data)
+    return data['fn'](*data['args'])
+
+def run_recent(lock, next, identifier, fn_data):
+    identifier = serialize_to_base64(identifier)
+
+    next[identifier] = fn_data
+
+    while lock.get(identifier, None):
+        time.sleep(0.01)
+    
+    lock[identifier] = True
+    fn = fn_data['fn']
+    args = fn_data.get('args', tuple())
+    kwargs = fn_data.get('kwargs', dict())
+    x = fn(*args, **kwargs)  
+    lock[identifier] = False    
+    return x
 
 if __name__ == '__main__':
     socketio.run(app, debug=False, use_reloader=False)
