@@ -28,7 +28,8 @@
         --destructive-foreground: 210 40% 98%;
         --ring: 215 20.2% 65.1%;
 
-        --uk-offcanvas-bar-width: 1000px;
+        --uk-offcanvas-bar-width: 100vw;
+        --uk-offcanvas-bar-width-i: -100vw;
       }
       .dark {
         --background: 47 50% 10%;
@@ -108,7 +109,7 @@
         <h1 class="uk-h1">Langly</h1>
         <a class="uk-btn uk-btn-sm uk-btn-ghost uk-btn-icon" type="button" data-uk-toggle="target: #offcanvas-overlay"><uk-icon icon="ellipsis"></uk-icon></a>
       </div>
-      <div id="offcanvas-overlay" data-uk-offcanvas="overlay: true">
+      <div id="offcanvas-overlay" data-uk-offcanvas="overlay: true; flip: true">
         <div class="uk-offcanvas-bar p-4">
           <button
             class="uk-offcanvas-close absolute right-4 top-4"
