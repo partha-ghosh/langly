@@ -155,8 +155,7 @@ def update_vocab_list(search_string):
 
             
 
-def translate(text, source=info['known_lang'], target=info['unknown_lang']):
-    print(source, target)
+def translate(text, source, target):
     info['translator'] = DeeplTranslator(api_key=DEEPL_API_KEY, source=source, target=target, use_free_api=True)
     translation = info['translation_cache'].get(text, None)
 
@@ -182,16 +181,11 @@ def text_to_speech(text, lang):
     # return data
 
 def save_meaning(subsentence, meaning, sent_idx):
+    subsentence = re.sub(r'[^a-zA-Z0-9 ]', '', subsentence)
 
     lang_key = f"{info['known_lang']}2{info['unknown_lang']}"
 
     info['vocab_data'].setdefault(lang_key, dict())
-
-    if sent_idx % 2 == 1: 
-        tmp = subsentence
-        subsentence = meaning
-        meaning = tmp
-        subsentence = re.sub(r'[^a-zA-Z0-9 ]', '', subsentence)
 
 
     if not info['vocab_data'][lang_key].get(subsentence, None):
@@ -230,7 +224,7 @@ def calc_dues():
     
     if len(info['dues'][lang_key]) == 0:
         today = datetime.today().date()
-        for subsentence, details in vocab_data.get(lang_key, {}).items():
+        for subsentence, details in info['vocab_data'].get(lang_key, {}).items():
             next_review = datetime.strptime(details.get('next_review', '2000-01-01'), '%Y-%m-%d').date()
             if next_review <= today:
                 info['dues'][lang_key].append(subsentence)
@@ -242,16 +236,21 @@ def get_next_card():
     lang_key = f"{info['known_lang']}2{info['unknown_lang']}"
     if len(info['dues'][lang_key])==0:
         info['question_container'].update(Element('span', leaf='No more cards due for review! 🎉'), index=0)
+        info['answer_container'].update(Element('span', leaf=''), index=0)
         return 0
     subsentence = info['dues'][lang_key][0]
     meaning = info['vocab_data'][lang_key][subsentence]['translation']
     related_examples = random.sample(info['vocab_data'][lang_key][subsentence]['examples'], min(10, len(info['vocab_data'][lang_key][subsentence]['examples'])))
 
     info['question_container'].update(Element('span', leaf=subsentence), index=0)
-    info['answer_container'].update(Element('span', leaf=meaning + ' '), index=0).add(
-        Element('a', attrs=dict(class_="uk-btn uk-btn-default uk-btn-sm uk-btn-icon", onclick=f"socket.emit('exec_py_serialized', {serialize_to_base64({'fn': text_to_speech, 'args': [meaning, info['unknown_lang']]})!r})")).add(
-            Element('uk-icon', attrs=dict(icon="volume-2"))
-        )
+    info['answer_container'].update(
+        Element('span').add(
+            Element('span', leaf=meaning + ' ')
+        ).add(
+            Element('a', attrs=dict(class_="uk-btn uk-btn-default uk-btn-sm uk-btn-icon", onclick=f"socket.emit('exec_py_serialized', {serialize_to_base64({'fn': text_to_speech, 'args': [meaning, info['unknown_lang']]})!r})")).add(
+                Element('uk-icon', attrs=dict(icon="volume-2"))
+            )
+        ), index=0
     )
 
     examples = info['examples_container']
@@ -304,27 +303,25 @@ def modify_selected_indices2(sent_idx):
     subsentences = []
     meanings = []
     
-    print(sent_idx)
     mci = int(math.floor(sent_idx/2))
     for si in ([sent_idx, sent_idx+1] if (sent_idx % 2 == 0) else [sent_idx-1, sent_idx]):
         new_groups = group_consecutive(info['selected_indices'][si])
         for word_indices in new_groups:
             subsentence = " ".join(info['words'][si][idx] for idx in word_indices)
             if si % 2 == 0:
-                meaning = translate(subsentence)
+                meaning = translate(subsentence, source=info['known_lang'], target=info['unknown_lang'])
+                subsentences.append(subsentence)
+                meanings.append(meaning)
             else:
                 meaning = translate(subsentence, source=info['unknown_lang'], target=info['known_lang'])
-
-            subsentences.append(subsentence)
-            meanings.append(meaning)
-    print(sent_idx, subsentence, meaning)
+                subsentences.append(meaning)
+                meanings.append(subsentence)
     
     idx = -1
     for idx, (subsentence, meaning) in enumerate(zip(subsentences, meanings)):
         info['meanings_containers'][mci].update(
             Element('li').add(
-                Element('div', attrs=dict(class_="pb-2"), leaf=subsentence + ' → '+ meaning) if (sent_idx%2==0) else \
-                Element('div', attrs=dict(class_="pb-2"), leaf=meaning + ' → '+ subsentence)
+                Element('div', attrs=dict(class_="pb-2"), leaf=subsentence + ' → '+ meaning)
             ).add(
                 Element('div', attrs=dict(class_="flex justify-end gap-2")).add(
                     Element('a', attrs=dict(class_="uk-btn uk-btn-default uk-btn-sm uk-btn-icon", onclick=f"socket.emit('exec_py_serialized', {serialize_to_base64({'fn': text_to_speech, 'args': [meaning  if (sent_idx%2==0) else subsentence, info['unknown_lang']]})!r})")).add(
@@ -372,7 +369,7 @@ def process_text(text):
     info['selected_indices'] = [[] for _ in range(2*len(sentences))]
     
     for sent_idx, sentence in enumerate(sentences):
-        translation = translate(sentence)
+        translation = translate(sentence, source=info['known_lang'], target=info['unknown_lang'])
         info['sentences'].extend([sentence, translation])
 
         [card := Element('div', attrs=dict(class_="uk-card uk-card-default uk-card-body")).add(
@@ -404,7 +401,7 @@ def process_text(text):
 
         for word_idx, word in enumerate(translated_words):
             translated_word_container.add(
-                Element('a', attrs=dict(class_="uk-btn", onclick=f"this.classList.toggle('uk-btn-primary'); socket.emit('exec_py_serialized', {serialize_to_base64({'fn': modify_selected_indices, 'args': [2*sent_idx+1, word_idx]})!r})"), leaf=word)
+                Element('a', attrs=dict(class_="uk-btn", onclick=f"this.classList.toggle('uk-btn-secondary'); socket.emit('exec_py_serialized', {serialize_to_base64({'fn': modify_selected_indices, 'args': [2*sent_idx+1, word_idx]})!r})"), leaf=word)
             )
         info['learn_container'].add(card)
 

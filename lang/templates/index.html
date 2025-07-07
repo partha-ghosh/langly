@@ -127,7 +127,7 @@
 
         <div>
           <label class="uk-form-label" for="unknown-lang">Language to learn</label>
-          <uk-select id="unknown-lang" cls-custom="button: uk-input-fake justify-between w-full; dropdown: w-full" icon onclick="socket.emit('exec_py', {fn: 'known_lang', args: [document.getElementById('known-lang').selected.value]})">
+          <uk-select id="unknown-lang" cls-custom="button: uk-input-fake justify-between w-full; dropdown: w-full" icon onclick="socket.emit('exec_py', {fn: 'unknown_lang', args: [document.getElementById('unknown-lang').selected.value]})">
             <select hidden>
               <option value="en">English</option>
               <option value="de" selected>German</option>
