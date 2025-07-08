@@ -164,8 +164,6 @@ def text_to_speech(text, lang):
     # return data
 
 def save_meaning(subsentence, meaning, sent_idx):
-    subsentence = re.sub(r'[^a-zA-Z0-9 ]', '', subsentence)
-
     lang_key = f"{info['known_lang']}2{info['unknown_lang']}"
 
     info['vocab_data'].setdefault(lang_key, dict())
@@ -293,10 +291,16 @@ def modify_selected_indices2(sent_idx):
             subsentence = " ".join(info['words'][si][idx] for idx in word_indices)
             if si % 2 == 0:
                 meaning = translate(subsentence, source=info['known_lang'], target=info['unknown_lang'])
+            else:
+                meaning = translate(subsentence, source=info['unknown_lang'], target=info['known_lang'])
+            
+            subsentence = re.sub(r'[^a-zA-Z0-9 ]', '', subsentence)
+            meaning = re.sub(r'[^a-zA-Z0-9 ]', '', meaning)
+
+            if si % 2 == 0:
                 subsentences.append(subsentence)
                 meanings.append(meaning)
             else:
-                meaning = translate(subsentence, source=info['unknown_lang'], target=info['known_lang'])
                 subsentences.append(meaning)
                 meanings.append(subsentence)
     
@@ -307,7 +311,7 @@ def modify_selected_indices2(sent_idx):
                 Element('div', attrs=dict(class_="pb-2"), leaf=subsentence + ' → '+ meaning)
             ).add(
                 Element('div', attrs=dict(class_="flex justify-end gap-2")).add(
-                    Element('a', attrs=dict(class_="uk-btn uk-btn-default uk-btn-sm uk-btn-icon", onclick=f"socket.emit('exec_py_serialized', {serialize_to_base64({'fn': text_to_speech, 'args': [meaning  if (sent_idx%2==0) else subsentence, info['unknown_lang']]})!r})")).add(
+                    Element('a', attrs=dict(class_="uk-btn uk-btn-default uk-btn-sm uk-btn-icon", onclick=f"socket.emit('exec_py_serialized', {serialize_to_base64({'fn': text_to_speech, 'args': [meaning, info['unknown_lang']]})!r})")).add(
                         Element('uk-icon', attrs=dict(icon="volume-2"))
                     )
                 ).add(
@@ -358,12 +362,14 @@ def process_text(text):
         [card := Element('div', attrs=dict(class_="uk-card uk-card-default uk-card-body")).add(
             word_container := Element('div', attrs=dict(class_="flex flex-wrap items-center gap-0.5 uk-btn-xs pb-2"))
         ).add(
-            Element('div', attrs=dict(class_="flex justify-between gap-2 pb-2")).add(
-                translated_word_container := Element('div', attrs=dict(class_="flex flex-wrap items-center gap-0.5 uk-btn-xs pb-2"))
-                # Element('div', attrs=dict(class_="py-1 text-muted-foreground"), leaf=translation)
-            ).add(
-                Element('a', attrs=dict(class_="uk-btn uk-btn-default uk-btn-sm uk-btn-icon self-end", onclick=f"socket.emit('exec_py_serialized', {serialize_to_base64({'fn': text_to_speech, 'args': [translation, info['unknown_lang']]})!r})")).add(
-                    Element('uk-icon', attrs=dict(icon="volume-2"))
+            Element('div', attrs=dict(class_="uk-card uk-card-secondary uk-card-body mb-2")).add(
+                Element('div', attrs=dict(class_="flex justify-between gap-2")).add(
+                    translated_word_container := Element('div', attrs=dict(class_="flex flex-wrap items-center gap-0.5 uk-btn-xs pb-2"))
+                    # Element('div', attrs=dict(class_="py-1 text-muted-foreground"), leaf=translation)
+                ).add(
+                    Element('a', attrs=dict(class_="uk-btn uk-btn-default uk-btn-sm uk-btn-icon self-end", onclick=f"socket.emit('exec_py_serialized', {serialize_to_base64({'fn': text_to_speech, 'args': [translation, info['unknown_lang']]})!r})")).add(
+                        Element('uk-icon', attrs=dict(icon="volume-2"))
+                    )
                 )
             )
         ).add(
@@ -384,7 +390,7 @@ def process_text(text):
 
         for word_idx, word in enumerate(translated_words):
             translated_word_container.add(
-                Element('a', attrs=dict(class_="uk-btn", onclick=f"this.classList.toggle('uk-btn-secondary'); socket.emit('exec_py_serialized', {serialize_to_base64({'fn': modify_selected_indices, 'args': [2*sent_idx+1, word_idx]})!r})"), leaf=word)
+                Element('a', attrs=dict(class_="uk-btn", onclick=f"this.classList.toggle('uk-btn-primary'); socket.emit('exec_py_serialized', {serialize_to_base64({'fn': modify_selected_indices, 'args': [2*sent_idx+1, word_idx]})!r})"), leaf=word)
             )
         info['learn_container'].add(card)
 
@@ -403,6 +409,11 @@ def unknown_lang(lang):
     info['unknown_lang'] = info['supported_langs'][lang]
     calc_dues()
 
+def save_deepl_api_key(api_key):
+    config = load_json(f'{root_save_dir}/config.json')
+    config['deepl_api_key'] = api_key
+    save_json(f'{root_save_dir}/config.json', config)
+    info['deepl_api_key'] = api_key    
 
 
 @app.route('/')
@@ -415,9 +426,12 @@ def handle_connect():
     
     known_lang = config.get('known_lang', 'English')
     unknown_lang = config.get('unknown_lang', 'German')
+    deepl_api_key = config.get('deepl_api_key', '')
 
     info['known_lang'] = info['supported_langs'][known_lang]
     info['unknown_lang'] = info['supported_langs'][unknown_lang]
+    info['deepl_api_key'] = deepl_api_key    
+
 
     for container, id, default_lang in [('known-lang-container', 'known_lang', known_lang), ('unknown-lang-container', 'unknown_lang', unknown_lang)]:
         div = Element('span')
