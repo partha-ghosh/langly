@@ -100,6 +100,10 @@
       socket.on('play', function (str) {
         return new Audio(str).play();
       });
+
+      window.onbeforeunload = function() {
+        return "You would lose the state!";
+      }
     </script>
   </head>
   <body id="main-body" class="bg-background font-geist-sans text-foreground antialiased">
@@ -109,6 +113,7 @@
         <h1 class="uk-h1">Langly</h1>
         <a class="uk-btn uk-btn-sm uk-btn-ghost uk-btn-icon" type="button" data-uk-toggle="target: #offcanvas-overlay"><uk-icon icon="ellipsis"></uk-icon></a>
       </div>
+
       <div id="offcanvas-overlay" data-uk-offcanvas="overlay: true; flip: true">
         <div class="uk-offcanvas-bar p-4">
           <button
@@ -119,7 +124,7 @@
       
           <h3 class="uk-h3">Settings</h3>
       
-          <div class="mt-4">
+          <div class="uk-container uk-container-xs mt-4">
             <uk-theme-switcher id="theme-switcher">
               <select hidden>
                 <optgroup data-key="mode" label="Mode">
@@ -128,13 +133,13 @@
                 </optgroup>
               </select>
             </uk-theme-switcher>
-
+            
             <div class="mt-4">
               <label class="uk-form-label">DeepL API</label>
               <div class="flex gap-2">
                 <div class="grow">
                   <input
-                    class="uk-input max-w-sm"
+                    class="uk-input"
                     type="text"
                     placeholder="DeepL API Key"
                     aria-label="Custom controls"
@@ -152,6 +157,8 @@
       </div>
       <hr class="uk-hr" />
     </div>
+
+
     <div class="uk-container uk-container-xs">
       <div class="grid grid-cols-2 gap-3 py-3">
         <div id="known-lang-container">
