@@ -233,6 +233,7 @@ def get_next_card():
     )
 
     examples = info['examples_container']
+    idx = -1
     for idx, (sentence, translation) in enumerate(related_examples):
         examples.update(
             Element('li').add(
@@ -247,6 +248,9 @@ def get_next_card():
                 )
             ), index=idx
         )
+    
+    for ri in range(len(info['examples_container'].children_order)-1, idx, -1):
+        info['examples_container'].remove(ri)   
 
 def update_spaced_repetition(rating):
     lang_key = f"{info['known_lang']}2{info['unknown_lang']}"
