@@ -127,7 +127,7 @@ def update_vocab_list(search_string):
 
             for word, meaning in usage.items():
                 search_result.add(
-                    Element('span', attrs=dict(class_="uk-label"), leaf=f"{word} -> {meaning}")
+                    Element('span', attrs=dict(class_="uk-label"), leaf=f"{word} → {meaning}")
                 )
         
         for ri in range(idx+1, len(info['search_result_container'].children_order)):
