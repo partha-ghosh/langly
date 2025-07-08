@@ -99,7 +99,6 @@ def update_vocab_list(search_string):
         # Get all sentences and filter by search text
         all_sentences = dict()
         for subsentence in info['vocab_data'][lang_key]:
-            subsentence = re.sub(r'[^a-zA-Z0-9 ]', '', subsentence)
             examples = info['vocab_data'][lang_key][subsentence]['examples']
             for sentence, translation in examples:
                 all_sentences.setdefault(sentence, dict(translation=translation, usage=dict()))
@@ -185,8 +184,7 @@ def save_meaning(subsentence, meaning, sent_idx):
         info['vocab_data'][lang_key][subsentence]['examples'] = info['vocab_data'][lang_key][subsentence]['examples'][-100:]
 
 def delete_meaning(subsentence, sent_idx):
-    subsentence = re.sub(r'[^a-zA-Z0-9 ]', '', subsentence)
-    
+
     if sent_idx % 2 == 0: 
         lang_key = f"{info['known_lang']}2{info['unknown_lang']}"
     else:
@@ -294,8 +292,8 @@ def modify_selected_indices2(sent_idx):
             else:
                 meaning = translate(subsentence, source=info['unknown_lang'], target=info['known_lang'])
             
-            subsentence = re.sub(r'[^a-zA-Z0-9 ]', '', subsentence)
-            meaning = re.sub(r'[^a-zA-Z0-9 ]', '', meaning)
+            subsentence = re.sub(r'[^\w\s]', '', subsentence)
+            meaning = re.sub(r'[^\w\s]', '', meaning)
 
             if si % 2 == 0:
                 subsentences.append(subsentence)
