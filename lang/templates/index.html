@@ -8,50 +8,8 @@
     <link rel="stylesheet" href="{{ url_for('static', filename='css/utilities.min.css') }}" />
     <style>
       :root {
-        --background: 0 0% 100%;
-        --foreground: 222.2 47.4% 11.2%;
-        --muted: 210 40% 96.1%;
-        --muted-foreground: 215.4 16.3% 46.9%;
-        --card: 0 0% 100%;
-        --card-foreground: 222.2 47.4% 11.2%;
-        --popover: 0 0% 100%;
-        --popover-foreground: 222.2 47.4% 11.2%;
-        --border: 214.3 31.8% 91.4%;
-        --input: 214.3 31.8% 91.4%;
-        --primary: 222.2 47.4% 11.2%;
-        --primary-foreground: 210 40% 98%;
-        --secondary: 210 40% 96.1%;
-        --secondary-foreground: 222.2 47.4% 11.2%;
-        --accent: 210 40% 96.1%;
-        --accent-foreground: 222.2 47.4% 11.2%;
-        --destructive: 0 100% 50%;
-        --destructive-foreground: 210 40% 98%;
-        --ring: 215 20.2% 65.1%;
-
         --uk-offcanvas-bar-width: 100vw;
         --uk-offcanvas-bar-width-i: -100vw;
-      }
-      .dark {
-        --background: 47 50% 10%;
-        --foreground: 47 5% 90%;
-        --card: 47 50% 10%;
-        --card-foreground: 47 5% 90%;
-        --popover: 47 50% 5%;
-        --popover-foreground: 47 5% 90%;
-        --primary: 47 100% 50%;
-        --primary-foreground: 0 0% 100%;
-        --secondary: 47 30% 20%;
-        --secondary-foreground: 0 0% 100%;
-        --muted: 9 30% 25%;
-        --muted-foreground: 47 5% 60%;
-        --accent: 9 30% 25%;
-        --accent-foreground: 47 5% 90%;
-        --destructive: 0 100% 50%;
-        --destructive-foreground: 47 5% 90%;
-        --border: 47 30% 50%;
-        --input: 47 30% 50%;
-        --ring: 47 100% 50%;
-        --radius: 0.5rem;
       }
     </style>
     
@@ -127,6 +85,29 @@
           <div class="uk-container uk-container-xs mt-4">
             <uk-theme-switcher id="theme-switcher">
               <select hidden>
+                <optgroup data-key="theme" label="Theme">
+                  <option data-hex="#52525b" value="uk-theme-zinc">Zinc</option>
+                  <option data-hex="#64748b" value="uk-theme-slate">Slate</option>
+                  <option data-hex="#78716c" value="uk-theme-stone">Stone</option>
+                  <option data-hex="#6b7280" value="uk-theme-gray">Gray</option>
+                  <option data-hex="#737373" value="uk-theme-neutral" selected>
+                    Neutral
+                  </option>
+                  <option data-hex="#dc2626" value="uk-theme-red">Red</option>
+                  <option data-hex="#e11d48" value="uk-theme-rose">Rose</option>
+                  <option data-hex="#f97316" value="uk-theme-orange">Orange</option>
+                  <option data-hex="#65a30d" value="uk-theme-green">Green</option>
+                  <option data-hex="#2563eb" value="uk-theme-blue">Blue</option>
+                  <option data-hex="#facc15" value="uk-theme-yellow">Yellow</option>
+                  <option data-hex="#7c3aed" value="uk-theme-violet">Violet</option>
+                  <option data-hex="#d97706" value="uk-theme-amber">Amber</option>
+                  <option data-hex="#9333ea" value="uk-theme-purple">Purple</option>
+                  <option data-hex="#0d9488" value="uk-theme-teal">Teal</option>
+                </optgroup>
+                <optgroup data-key="font" label="Font">
+                  <option value="uk-font-sm" selected>Small</option>
+                  <option value="uk-font-base">Default</option>
+                </optgroup>
                 <optgroup data-key="mode" label="Mode">
                   <option data-icon="sun" value="light">Light</option>
                   <option data-icon="moon" value="dark">Dark</option>
