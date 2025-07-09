@@ -13,6 +13,29 @@
       }
     </style>
     
+    <script>
+      const htmlElement = document.documentElement;
+    
+      const __FRANKEN__ = JSON.parse(
+        localStorage.getItem("__FRANKEN__") || "{}",
+      );
+    
+      if (
+        __FRANKEN__.mode === "dark" ||
+        (!__FRANKEN__.mode &&
+          window.matchMedia("(prefers-color-scheme: dark)").matches)
+      ) {
+        htmlElement.classList.add("dark");
+      } else {
+        htmlElement.classList.remove("dark");
+      }
+    
+      htmlElement.classList.add(__FRANKEN__.theme || "uk-theme-neutral");
+      htmlElement.classList.add(__FRANKEN__.radii || "uk-radii-md");
+      htmlElement.classList.add(__FRANKEN__.shadows || "uk-shadows-sm");
+      htmlElement.classList.add(__FRANKEN__.font || "uk-font-sm");
+    </script>
+
     <script src="{{ url_for('static', filename='js/core.iife.js') }}" type="module"></script>
     <script src="{{ url_for('static', filename='js/icon.iife.js') }}" type="module"></script>
     <script src="https://cdn.socket.io/4.8.1/socket.io.min.js" integrity="sha384-mkQ3/7FUtcGyoppY6bz/PORYoGqOl7/aSUMn2ymDOJcapfS6PHqxhRTMh1RR0Q6+" crossorigin="anonymous"></script>
@@ -75,13 +98,13 @@
       <div id="offcanvas-overlay" data-uk-offcanvas="overlay: true; flip: true">
         <div class="uk-offcanvas-bar p-4">
           <button
-            class="uk-offcanvas-close absolute right-4 top-4"
-            type="button"
-            data-uk-close
+          class="uk-offcanvas-close absolute right-4 top-4"
+          type="button"
+          data-uk-close
           ></button>
-      
+          
           <h3 class="uk-h3">Settings</h3>
-      
+          
           <div class="uk-container uk-container-xs mt-4">
             <uk-theme-switcher id="theme-switcher">
               <select hidden>
@@ -105,7 +128,7 @@
                   <option data-hex="#0d9488" value="uk-theme-teal">Teal</option>
                 </optgroup>
                 <optgroup data-key="mode" label="Mode">
-                  <option data-icon="sun" value="light">Light</option>
+                  <option data-icon="sun" value="light" selected>Light</option>
                   <option data-icon="moon" value="dark">Dark</option>
                 </optgroup>
               </select>
