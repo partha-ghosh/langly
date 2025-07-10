@@ -220,29 +220,43 @@ def get_next_card():
     meaning = info['vocab_data'][lang_key][subsentence]['translation']
     related_examples = random.sample(info['vocab_data'][lang_key][subsentence]['examples'], min(10, len(info['vocab_data'][lang_key][subsentence]['examples'])))
 
-    if random.random() < 0.5:
+    if rand:=random.random() < 0.5:
         q = subsentence
         a = meaning
     else:
         q = meaning
         a = subsentence
 
-    info['question_container'].update(Element('span').add(
-        Element('span', leaf=q + ' ')
+    info['question_container'].update(Element('span', attrs=dict(class_="grid grid-cols-1 grid-rows-1 items-center")).add(
+        qc := Element('span', attrs=dict(class_="col-start-1 row-start-1 text-center")).add(
+            Element('span', leaf=q + ' ')
+        )
     ).add(
-        Element('a', attrs=dict(class_="uk-btn uk-btn-default uk-btn-sm uk-btn-icon", onclick=f"socket.emit('exec_py_serialized', {serialize_to_base64({'fn': delete_meaning, 'args': [subsentence]})!r})")).add(
-            Element('uk-icon', attrs=dict(icon="trash-2"))
+        Element('span', attrs=dict(class_="col-start-1 row-start-1 justify-self-end")).add(
+            Element('a', attrs=dict(class_="uk-btn uk-btn-default uk-btn-sm uk-btn-icon", onclick=f"socket.emit('exec_py_serialized', {serialize_to_base64({'fn': delete_meaning, 'args': [subsentence]})!r})")).add(
+                Element('uk-icon', attrs=dict(icon="trash-2"))
+            )
         )
     ), index=0)
     info['answer_container'].update(
-        Element('span').add(
+        ac := Element('span').add(
             Element('span', leaf=a + ' ')
-        ).add(
+        ), index=0
+    )
+
+    if rand < 0.5:
+        qc.add(
             Element('a', attrs=dict(class_="uk-btn uk-btn-default uk-btn-sm uk-btn-icon", onclick=f"socket.emit('exec_py_serialized', {serialize_to_base64({'fn': text_to_speech, 'args': [meaning, info['unknown_lang']]})!r})")).add(
                 Element('uk-icon', attrs=dict(icon="volume-2"))
             )
-        ), index=0
-    )
+        )
+    else:
+        ac.add(
+            Element('a', attrs=dict(class_="uk-btn uk-btn-default uk-btn-sm uk-btn-icon", onclick=f"socket.emit('exec_py_serialized', {serialize_to_base64({'fn': text_to_speech, 'args': [meaning, info['unknown_lang']]})!r})")).add(
+                Element('uk-icon', attrs=dict(icon="volume-2"))
+            )
+        )
+
 
     examples = info['examples_container']
     idx = -1
