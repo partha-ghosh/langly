@@ -14,7 +14,6 @@ import random
 import atexit
 import re
 import math
-from api_keys import DEEPL_API_KEY
 
 app = Flask(__name__)
 app.config['SECRET_KEY'] = 'your_secret_key'
@@ -138,7 +137,7 @@ def update_vocab_list(search_string):
             
 
 def translate(text, source, target):
-    info['translator'] = DeeplTranslator(api_key=DEEPL_API_KEY, source=source, target=target, use_free_api=True)
+    info['translator'] = DeeplTranslator(api_key=info['deepl_api_key'], source=source, target=target, use_free_api=True)
     translation = info['translation_cache'].get(text, None)
 
     if translation is None:
@@ -365,10 +364,9 @@ def process_text(text):
             word_container := Element('div', attrs=dict(class_="flex flex-wrap items-center gap-0.5 uk-btn-xs pb-2"))
         ).add(
             Element('div', attrs=dict(class_="uk-card uk-card-secondary uk-card-body mb-2")).add(
-                Element('div', attrs=dict(class_="flex justify-between gap-2")).add(
-                    translated_word_container := Element('div', attrs=dict(class_="flex flex-wrap items-center gap-0.5 uk-btn-xs pb-2"))
-                    # Element('div', attrs=dict(class_="py-1 text-muted-foreground"), leaf=translation)
-                ).add(
+                translated_word_container := Element('div', attrs=dict(class_="flex flex-wrap items-center gap-0.5 uk-btn-xs pb-2"))
+            ).add(
+                Element('div', attrs=dict(class_="flex justify-end gap-2")).add(
                     Element('a', attrs=dict(class_="uk-btn uk-btn-default uk-btn-sm uk-btn-icon self-end", onclick=f"socket.emit('exec_py_serialized', {serialize_to_base64({'fn': text_to_speech, 'args': [translation, info['unknown_lang']]})!r})")).add(
                         Element('uk-icon', attrs=dict(icon="volume-2"))
                     )
@@ -415,7 +413,7 @@ def save_deepl_api_key(api_key):
     config = load_json(f'{root_save_dir}/config.json')
     config['deepl_api_key'] = api_key
     save_json(f'{root_save_dir}/config.json', config)
-    info['deepl_api_key'] = api_key    
+    info['deepl_api_key'] = api_key  
 
 
 @app.route('/')

@@ -96,16 +96,18 @@
       </div>
 
       <div id="offcanvas-overlay" data-uk-offcanvas="overlay: true; flip: true">
-        <div class="uk-offcanvas-bar p-4">
-          <button
-          class="uk-offcanvas-close absolute right-4 top-4"
-          type="button"
-          data-uk-close
-          ></button>
-          
-          <h3 class="uk-h3">Settings</h3>
-          
+        <div class="uk-offcanvas-bar">
+      
           <div class="uk-container uk-container-xs mt-4">
+
+            <button
+              class="uk-offcanvas-close absolute right-4 top-4"
+              type="button"
+              data-uk-close
+            ></button>
+      
+            <h3 class="uk-h3">Settings</h3>
+
             <uk-theme-switcher id="theme-switcher">
               <select hidden>
                 <optgroup data-key="theme" label="Theme">
@@ -127,6 +129,10 @@
                   <option data-hex="#9333ea" value="uk-theme-purple">Purple</option>
                   <option data-hex="#0d9488" value="uk-theme-teal">Teal</option>
                 </optgroup>
+                <optgroup data-key="font" label="Font">
+                  <option value="uk-font-sm" selected>Small</option>
+                  <option value="uk-font-base">Default</option>
+                </optgroup>
                 <optgroup data-key="mode" label="Mode">
                   <option data-icon="sun" value="light" selected>Light</option>
                   <option data-icon="moon" value="dark">Dark</option>
@@ -139,6 +145,7 @@
               <div class="flex gap-2">
                 <div class="grow">
                   <input
+                    id="deeplApiKey"
                     class="uk-input"
                     type="text"
                     placeholder="DeepL API Key"
@@ -146,7 +153,7 @@
                   />
                 </div>
                 <div class="flex-none">
-                  <button class="uk-btn uk-btn-default">Save</button>
+                  <button class="uk-btn uk-btn-default" onclick="socket.emit('exec_py', {fn: 'save_deepl_api_key', args: [document.getElementById('deeplApiKey').value]})">Save</button>
                 </div>
               </div>
             </div>
@@ -180,11 +187,6 @@
           <a  onclick="socket.emit('exec_py', {fn: 'update_vocab_list', args: ['']});"><uk-icon icon="book-a" class="pe-1"></uk-icon>Vocabulary</a>
         </li>
       </ul>
-      <!-- <ul uk-tab class="uk-tab uk-margin">
-      <li class="uk-active"><a href="#">Learn</a></li>
-      <li><a href="#">Recall</a></li>
-      <li><a href="#">Vocabulary</a></li>
-    </ul> -->
 
       <ul class="uk-switcher mt-3">
         <!-- Learn tab -->
