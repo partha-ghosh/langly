@@ -182,19 +182,21 @@ def save_meaning(subsentence, meaning, sent_idx):
     if len(info['vocab_data'][lang_key][subsentence]['examples']) > 100:
         info['vocab_data'][lang_key][subsentence]['examples'] = info['vocab_data'][lang_key][subsentence]['examples'][-100:]
 
-def delete_meaning(subsentence, sent_idx):
-
-    if sent_idx % 2 == 0: 
-        lang_key = f"{info['known_lang']}2{info['unknown_lang']}"
-    else:
-        lang_key = f"{info['unknown_lang']}2{info['known_lang']}"
-
+def pop_example(subsentence):
+    lang_key = f"{info['known_lang']}2{info['unknown_lang']}"
     info['vocab_data'].setdefault(lang_key, dict())
     if info['vocab_data'][lang_key].get(subsentence, None):
         if len(info['vocab_data'][lang_key][subsentence]['examples']) == 1:
             info['vocab_data'][lang_key].pop(subsentence)
         else:
             info['vocab_data'][lang_key][subsentence]['examples'].pop(-1)
+
+def delete_meaning(subsentence):
+    lang_key = f"{info['known_lang']}2{info['unknown_lang']}"
+    info['vocab_data'].setdefault(lang_key, dict())
+    info['vocab_data'][lang_key].pop(subsentence, None)
+    calc_dues()
+    get_next_card()
 
 def calc_dues():
     lang_key = f"{info['known_lang']}2{info['unknown_lang']}"
@@ -220,10 +222,23 @@ def get_next_card():
     meaning = info['vocab_data'][lang_key][subsentence]['translation']
     related_examples = random.sample(info['vocab_data'][lang_key][subsentence]['examples'], min(10, len(info['vocab_data'][lang_key][subsentence]['examples'])))
 
-    info['question_container'].update(Element('span', leaf=subsentence), index=0)
+    if random.random() < 0.5:
+        q = subsentence
+        a = meaning
+    else:
+        q = meaning
+        a = subsentence
+
+    info['question_container'].update(Element('span').add(
+        Element('span', leaf=q + ' ')
+    ).add(
+        Element('a', attrs=dict(class_="uk-btn uk-btn-default uk-btn-sm uk-btn-icon", onclick=f"socket.emit('exec_py_serialized', {serialize_to_base64({'fn': delete_meaning, 'args': [subsentence]})!r})")).add(
+            Element('uk-icon', attrs=dict(icon="trash-2"))
+        )
+    ), index=0)
     info['answer_container'].update(
         Element('span').add(
-            Element('span', leaf=meaning + ' ')
+            Element('span', leaf=a + ' ')
         ).add(
             Element('a', attrs=dict(class_="uk-btn uk-btn-default uk-btn-sm uk-btn-icon", onclick=f"socket.emit('exec_py_serialized', {serialize_to_base64({'fn': text_to_speech, 'args': [meaning, info['unknown_lang']]})!r})")).add(
                 Element('uk-icon', attrs=dict(icon="volume-2"))
@@ -320,7 +335,7 @@ def modify_selected_indices2(sent_idx):
                         Element('uk-icon', attrs=dict(icon="save"))
                     )
                 ).add(
-                    Element('a', attrs=dict(class_="uk-btn uk-btn-default uk-btn-sm uk-btn-icon", onclick=f"socket.emit('exec_py_serialized', {serialize_to_base64({'fn': delete_meaning, 'args': [subsentence, sent_idx]})!r})")).add(
+                    Element('a', attrs=dict(class_="uk-btn uk-btn-default uk-btn-sm uk-btn-icon", onclick=f"socket.emit('exec_py_serialized', {serialize_to_base64({'fn': pop_example, 'args': [subsentence]})!r})")).add(
                         Element('uk-icon', attrs=dict(icon="trash-2"))
                     )
                 )
