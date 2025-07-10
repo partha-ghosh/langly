@@ -427,14 +427,12 @@ def known_lang(lang):
     config['known_lang'] = lang
     save_json(f'{root_save_dir}/config.json', config)
     info['known_lang'] = info['supported_langs'][lang]
-    calc_dues()
 
 def unknown_lang(lang):
     config = load_json(f'{root_save_dir}/config.json')
     config['unknown_lang'] = lang
     save_json(f'{root_save_dir}/config.json', config)
     info['unknown_lang'] = info['supported_langs'][lang]
-    calc_dues()
 
 def save_deepl_api_key(api_key):
     config = load_json(f'{root_save_dir}/config.json')
