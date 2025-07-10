@@ -2,7 +2,7 @@
 <html lang="en">
   <head>
     <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, minimumScale=1.0, userScalable=false" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, minimum-scale=1.0, user-scalable=no" />
     <title>Language Learning App</title>
     <link rel="stylesheet" href="{{ url_for('static', filename='css/core.min.css') }}" />
     <link rel="stylesheet" href="{{ url_for('static', filename='css/utilities.min.css') }}" />
@@ -92,7 +92,29 @@
     <div>
       <div class="uk-container uk-container-xs py-3 flex justify-between">
         <h1 class="uk-h1">Langly</h1>
-        <a class="uk-btn uk-btn-sm uk-btn-ghost uk-btn-icon" type="button" data-uk-toggle="target: #offcanvas-overlay"><uk-icon icon="ellipsis"></uk-icon></a>
+        <span class="flex justify-end gap-2">
+          <a class="uk-btn uk-btn-sm uk-btn-ghost uk-btn-icon" href="#modal-sections" data-uk-toggle><uk-icon icon="circle-question-mark"></uk-icon></a>
+          <a class="uk-btn uk-btn-sm uk-btn-ghost uk-btn-icon" type="button" data-uk-toggle="target: #offcanvas-overlay"><uk-icon icon="ellipsis"></uk-icon></a>
+        </span>
+      </div>
+      
+      
+      <div id="modal-sections" data-uk-modal>
+        <div class="uk-modal-dialog">
+          <button
+            class="uk-modal-close absolute right-4 top-4"
+            type="button"
+            data-uk-close
+          ></button>
+          <div class="uk-modal-header">
+            <h2 class="uk-modal-title">About</h2>
+          </div>
+          <div class="uk-modal-body">
+            <p>
+              This is currently in development.
+            </p>
+          </div>
+        </div>
       </div>
 
       <div id="offcanvas-overlay" data-uk-offcanvas="overlay: true; flip: true">
