@@ -196,21 +196,19 @@ def delete_meaning(subsentence):
     info['vocab_data'].setdefault(lang_key, dict())
     info['vocab_data'][lang_key].pop(subsentence, None)
     calc_dues()
-    get_next_card()
 
 def calc_dues():
     lang_key = f"{info['known_lang']}2{info['unknown_lang']}"
     info['dues'].setdefault(lang_key, [])
-    
-    if len(info['dues'][lang_key]) == 0:
-        today = datetime.today().date()
-        for subsentence, details in info['vocab_data'].get(lang_key, {}).items():
-            next_review = datetime.strptime(details.get('next_review', '2000-01-01'), '%Y-%m-%d').date()
-            if next_review <= today:
-                info['dues'][lang_key].append(subsentence)
-        random.shuffle(info['dues'][lang_key])
+    info['dues'][lang_key].clear()
 
-        get_next_card()
+    today = datetime.today().date()
+    for subsentence, details in info['vocab_data'].get(lang_key, {}).items():
+        next_review = datetime.strptime(details.get('next_review', '2000-01-01'), '%Y-%m-%d').date()
+        if next_review <= today:
+            info['dues'][lang_key].append(subsentence)
+    random.shuffle(info['dues'][lang_key])
+    get_next_card()
 
 def get_next_card():
     lang_key = f"{info['known_lang']}2{info['unknown_lang']}"
