@@ -38,7 +38,7 @@
 
     <script src="{{ url_for('static', filename='js/core.iife.js') }}" type="module"></script>
     <script src="{{ url_for('static', filename='js/icon.iife.js') }}" type="module"></script>
-    <script src="https://cdn.socket.io/4.8.1/socket.io.min.js" integrity="sha384-mkQ3/7FUtcGyoppY6bz/PORYoGqOl7/aSUMn2ymDOJcapfS6PHqxhRTMh1RR0Q6+" crossorigin="anonymous"></script>
+    <script src="{{ url_for('static', filename='js/socket.io.min.js') }}" integrity="sha384-mkQ3/7FUtcGyoppY6bz/PORYoGqOl7/aSUMn2ymDOJcapfS6PHqxhRTMh1RR0Q6+" crossorigin="anonymous"></script>
 
     <script>
       function insertElement(parent_id, sibling_id, ele_html) {
@@ -111,7 +111,10 @@
           </div>
           <div class="uk-modal-body">
             <p>
-              This is currently in development.
+              This app is currently under development.
+            </p>
+            <p>
+              Langly © Partha Ghosh
             </p>
           </div>
         </div>
