@@ -228,8 +228,12 @@ def get_next_card():
         a = subsentence
 
     info['question_container'].update(Element('span', attrs=dict(class_="grid grid-cols-1 grid-rows-1 items-center")).add(
-        qc := Element('span', attrs=dict(class_="col-start-1 row-start-1 text-center")).add(
+        Element('span', attrs=dict(class_="col-start-1 row-start-1 text-center")).add(
             Element('span', leaf=q + ' ')
+        ).add(
+            Element('a', attrs=dict(class_="uk-btn uk-btn-default uk-btn-sm uk-btn-icon", onclick=f"socket.emit('exec_py_serialized', {serialize_to_base64({'fn': text_to_speech, 'args': [meaning, info['unknown_lang'] if rand<0.5 else info['known_lang']]})!r})")).add(
+                Element('uk-icon', attrs=dict(icon="volume-2"))
+            )
         )
     ).add(
         Element('span', attrs=dict(class_="col-start-1 row-start-1 justify-self-end")).add(
@@ -239,24 +243,14 @@ def get_next_card():
         )
     ), index=0)
     info['answer_container'].update(
-        ac := Element('span').add(
+        Element('span').add(
             Element('span', leaf=a + ' ')
+        ).add(
+            Element('a', attrs=dict(class_="uk-btn uk-btn-default uk-btn-sm uk-btn-icon", onclick=f"socket.emit('exec_py_serialized', {serialize_to_base64({'fn': text_to_speech, 'args': [meaning, info['known_lang'] if rand<0.5 else info['unknown_lang']]})!r})")).add(
+                Element('uk-icon', attrs=dict(icon="volume-2"))
+            )
         ), index=0
     )
-
-    if rand < 0.5:
-        qc.add(
-            Element('a', attrs=dict(class_="uk-btn uk-btn-default uk-btn-sm uk-btn-icon", onclick=f"socket.emit('exec_py_serialized', {serialize_to_base64({'fn': text_to_speech, 'args': [meaning, info['unknown_lang']]})!r})")).add(
-                Element('uk-icon', attrs=dict(icon="volume-2"))
-            )
-        )
-    else:
-        ac.add(
-            Element('a', attrs=dict(class_="uk-btn uk-btn-default uk-btn-sm uk-btn-icon", onclick=f"socket.emit('exec_py_serialized', {serialize_to_base64({'fn': text_to_speech, 'args': [meaning, info['unknown_lang']]})!r})")).add(
-                Element('uk-icon', attrs=dict(icon="volume-2"))
-            )
-        )
-
 
     examples = info['examples_container']
     idx = -1
@@ -339,8 +333,20 @@ def modify_selected_indices2(sent_idx):
                 Element('div', attrs=dict(class_="pb-2"), leaf=subsentence + ' → '+ meaning)
             ).add(
                 Element('div', attrs=dict(class_="flex justify-end gap-2")).add(
+                    Element('a', attrs=dict(class_="uk-btn uk-btn-default uk-btn-sm uk-btn-icon", onclick=f"socket.emit('exec_py_serialized', {serialize_to_base64({'fn': text_to_speech, 'args': [subsentence, info['known_lang']]})!r})")).add(
+                        Element('uk-icon', attrs=dict(icon="volume-2"))
+                    )
+                ).add(
+                    Element('div', attrs=dict(class_="my-auto")).add(
+                        Element('uk-icon', attrs=dict(icon="move-right"))
+                    )
+                ).add(
                     Element('a', attrs=dict(class_="uk-btn uk-btn-default uk-btn-sm uk-btn-icon", onclick=f"socket.emit('exec_py_serialized', {serialize_to_base64({'fn': text_to_speech, 'args': [meaning, info['unknown_lang']]})!r})")).add(
                         Element('uk-icon', attrs=dict(icon="volume-2"))
+                    )
+                ).add(
+                    Element('div', attrs=dict(class_="my-auto")).add(
+                        Element('uk-icon', attrs=dict(icon="ellipsis-vertical"))
                     )
                 ).add(
                     Element('a', attrs=dict(class_="uk-btn uk-btn-default uk-btn-sm uk-btn-icon", onclick=f"socket.emit('exec_py_serialized', {serialize_to_base64({'fn': save_meaning, 'args': [subsentence, meaning, sent_idx]})!r})")).add(
@@ -388,7 +394,15 @@ def process_text(text):
         info['sentences'].extend([sentence, translation])
 
         [card := Element('div', attrs=dict(class_="uk-card uk-card-default uk-card-body")).add(
-            word_container := Element('div', attrs=dict(class_="flex flex-wrap items-center gap-0.5 uk-btn-xs pb-2"))
+            Element('div', attrs=dict(class_="uk-card uk-card-default uk-card-body mb-2")).add(
+                word_container := Element('div', attrs=dict(class_="flex flex-wrap items-center gap-0.5 uk-btn-xs pb-2"))
+            ).add(
+                Element('div', attrs=dict(class_="flex justify-end gap-2")).add(
+                    Element('a', attrs=dict(class_="uk-btn uk-btn-default uk-btn-sm uk-btn-icon self-end", onclick=f"socket.emit('exec_py_serialized', {serialize_to_base64({'fn': text_to_speech, 'args': [sentence, info['known_lang']]})!r})")).add(
+                        Element('uk-icon', attrs=dict(icon="volume-2"))
+                    )
+                )
+            )
         ).add(
             Element('div', attrs=dict(class_="uk-card uk-card-secondary uk-card-body mb-2")).add(
                 translated_word_container := Element('div', attrs=dict(class_="flex flex-wrap items-center gap-0.5 uk-btn-xs pb-2"))
