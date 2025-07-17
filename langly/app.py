@@ -231,7 +231,7 @@ def get_next_card():
         Element('span', attrs=dict(class_="col-start-1 row-start-1 text-center")).add(
             Element('span', leaf=q + ' ')
         ).add(
-            Element('a', attrs=dict(class_="uk-btn uk-btn-default uk-btn-sm uk-btn-icon", onclick=f"socket.emit('exec_py_serialized', {serialize_to_base64({'fn': text_to_speech, 'args': [q, info['known_lang'] if rand<0.5 else info['unknown_lang']]})!r})")).add(
+            Element('a', attrs=dict(class_="uk-btn uk-btn-default uk-btn-sm uk-btn-icon", onclick=f"socket.emit('exec_py_serialized', {serialize_to_base64({'fn': text_to_speech, 'args': [q, info['unknown_lang'] if rand<0.5 else info['known_lang']]})!r})")).add(
                 Element('uk-icon', attrs=dict(icon="volume-2"))
             )
         )
@@ -246,7 +246,7 @@ def get_next_card():
         Element('span').add(
             Element('span', leaf=a + ' ')
         ).add(
-            Element('a', attrs=dict(class_="uk-btn uk-btn-default uk-btn-sm uk-btn-icon", onclick=f"socket.emit('exec_py_serialized', {serialize_to_base64({'fn': text_to_speech, 'args': [a, info['unknown_lang'] if rand<0.5 else info['known_lang']]})!r})")).add(
+            Element('a', attrs=dict(class_="uk-btn uk-btn-default uk-btn-sm uk-btn-icon", onclick=f"socket.emit('exec_py_serialized', {serialize_to_base64({'fn': text_to_speech, 'args': [a, info['known_lang'] if rand<0.5 else info['unknown_lang']]})!r})")).add(
                 Element('uk-icon', attrs=dict(icon="volume-2"))
             )
         ), index=0
