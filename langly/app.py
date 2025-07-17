@@ -97,11 +97,12 @@ def update_vocab_list(search_string):
 
         # Get all sentences and filter by search text
         all_sentences = dict()
-        for subsentence in info['vocab_data'][lang_key]:
-            examples = info['vocab_data'][lang_key][subsentence]['examples']
+        for word_key in info['vocab_data'][lang_key]:
+            examples = info['vocab_data'][lang_key][word_key]['examples']
             for sentence, translation in examples:
                 all_sentences.setdefault(sentence, dict(translation=translation, usage=dict()))
-                all_sentences[sentence]['usage'][subsentence] = vocab_data[lang_key][subsentence]['translation']
+                subsentence = vocab_data[lang_key][word_key]['subsentence']
+                all_sentences[sentence]['usage'][subsentence] = vocab_data[lang_key][word_key]['translation']
 
         if search_string:
             search_lower = search_string.lower()
@@ -167,34 +168,35 @@ def save_meaning(subsentence, meaning, sent_idx):
     info['vocab_data'].setdefault(lang_key, dict())
 
 
-    if not info['vocab_data'][lang_key].get(subsentence, None):
-        info['vocab_data'][lang_key][subsentence] = dict(
+    if not info['vocab_data'][lang_key].get((subsentence,meaning), None):
+        info['vocab_data'][lang_key][(subsentence,meaning)] = dict(
+            subsentence=subsentence,
             translation=meaning,
             rating=1,
             interval=1,
             examples=[]
         )
-    info['vocab_data'][lang_key][subsentence]['examples'].append(
+    info['vocab_data'][lang_key][(subsentence,meaning)]['examples'].append(
         [info['sentences'][sent_idx], info['sentences'][sent_idx+1]] if (sent_idx % 2 == 0) else \
         [info['sentences'][sent_idx-1], info['sentences'][sent_idx]]
     )
 
-    if len(info['vocab_data'][lang_key][subsentence]['examples']) > 100:
-        info['vocab_data'][lang_key][subsentence]['examples'] = info['vocab_data'][lang_key][subsentence]['examples'][-100:]
+    if len(info['vocab_data'][lang_key][(subsentence,meaning)]['examples']) > 100:
+        info['vocab_data'][lang_key][(subsentence,meaning)]['examples'] = info['vocab_data'][lang_key][(subsentence,meaning)]['examples'][-100:]
 
-def pop_example(subsentence):
+def pop_example(subsentence, meaning):
     lang_key = f"{info['known_lang']}2{info['unknown_lang']}"
     info['vocab_data'].setdefault(lang_key, dict())
-    if info['vocab_data'][lang_key].get(subsentence, None):
-        if len(info['vocab_data'][lang_key][subsentence]['examples']) == 1:
-            info['vocab_data'][lang_key].pop(subsentence)
+    if info['vocab_data'][lang_key].get((subsentence,meaning), None):
+        if len(info['vocab_data'][lang_key][(subsentence,meaning)]['examples']) == 1:
+            info['vocab_data'][lang_key].pop((subsentence,meaning))
         else:
-            info['vocab_data'][lang_key][subsentence]['examples'].pop(-1)
+            info['vocab_data'][lang_key][(subsentence,meaning)]['examples'].pop(-1)
 
-def delete_meaning(subsentence):
+def delete_meaning(subsentence, meaning):
     lang_key = f"{info['known_lang']}2{info['unknown_lang']}"
     info['vocab_data'].setdefault(lang_key, dict())
-    info['vocab_data'][lang_key].pop(subsentence, None)
+    info['vocab_data'][lang_key].pop((subsentence,meaning), None)
     calc_dues()
 
 def calc_dues():
@@ -203,10 +205,10 @@ def calc_dues():
     info['dues'][lang_key].clear()
 
     today = datetime.today().date()
-    for subsentence, details in info['vocab_data'].get(lang_key, {}).items():
+    for word_key, details in info['vocab_data'].get(lang_key, {}).items():
         next_review = datetime.strptime(details.get('next_review', '2000-01-01'), '%Y-%m-%d').date()
         if next_review <= today:
-            info['dues'][lang_key].append(subsentence)
+            info['dues'][lang_key].append(word_key)
     random.shuffle(info['dues'][lang_key])
     get_next_card()
 
@@ -216,9 +218,10 @@ def get_next_card():
         info['question_container'].update(Element('span', leaf='No more cards due for review! 🎉'), index=0)
         info['answer_container'].update(Element('span', leaf=''), index=0)
         return 0
-    subsentence = info['dues'][lang_key][0]
-    meaning = info['vocab_data'][lang_key][subsentence]['translation']
-    related_examples = random.sample(info['vocab_data'][lang_key][subsentence]['examples'], min(10, len(info['vocab_data'][lang_key][subsentence]['examples'])))
+    word_key = info['dues'][lang_key][0]
+    subsentence = info['vocab_data'][lang_key][word_key]['subsentence']
+    meaning = info['vocab_data'][lang_key][word_key]['translation']
+    related_examples = random.sample(info['vocab_data'][lang_key][word_key]['examples'], min(10, len(info['vocab_data'][lang_key][word_key]['examples'])))
 
     if rand:=random.random() < 0.5:
         q = subsentence
@@ -237,7 +240,7 @@ def get_next_card():
         )
     ).add(
         Element('span', attrs=dict(class_="col-start-1 row-start-1 justify-self-end")).add(
-            Element('a', attrs=dict(class_="uk-btn uk-btn-default uk-btn-sm uk-btn-icon", onclick=f"socket.emit('exec_py_serialized', {serialize_to_base64({'fn': delete_meaning, 'args': [subsentence]})!r})")).add(
+            Element('a', attrs=dict(class_="uk-btn uk-btn-default uk-btn-sm uk-btn-icon", onclick=f"socket.emit('exec_py_serialized', {serialize_to_base64({'fn': delete_meaning, 'args': [subsentence, meaning]})!r})")).add(
                 Element('uk-icon', attrs=dict(icon="trash-2"))
             )
         )
@@ -276,19 +279,19 @@ def update_spaced_repetition(rating):
     lang_key = f"{info['known_lang']}2{info['unknown_lang']}"
     ratings = {'hard': 0.75, 'medium': 1.5, 'easy': 2.5}
 
-    subsentence = info['dues'][lang_key][0]
-    interval = info['vocab_data'][lang_key][subsentence]['interval']
+    word_key = info['dues'][lang_key][0]
+    interval = info['vocab_data'][lang_key][word_key]['interval']
     
     # Update interval based on rating
     new_interval = interval * ratings.get(rating, 1)
-    info['vocab_data'][lang_key][subsentence]['interval'] = new_interval
+    info['vocab_data'][lang_key][word_key]['interval'] = new_interval
     
     # Calculate next review date
     next_review = datetime.today() + timedelta(days=int(new_interval))
-    info['vocab_data'][lang_key][subsentence]['next_review'] = next_review.strftime('%Y-%m-%d')
+    info['vocab_data'][lang_key][word_key]['next_review'] = next_review.strftime('%Y-%m-%d')
     
     # Update rating
-    info['vocab_data'][lang_key][subsentence]['rating'] = ratings.get(rating, 1)
+    info['vocab_data'][lang_key][word_key]['rating'] = ratings.get(rating, 1)
     info['dues'][lang_key].pop(0)
 
     get_next_card()
@@ -353,7 +356,7 @@ def modify_selected_indices2(sent_idx):
                         Element('uk-icon', attrs=dict(icon="save"))
                     )
                 ).add(
-                    Element('a', attrs=dict(class_="uk-btn uk-btn-default uk-btn-sm uk-btn-icon", onclick=f"socket.emit('exec_py_serialized', {serialize_to_base64({'fn': pop_example, 'args': [subsentence]})!r})")).add(
+                    Element('a', attrs=dict(class_="uk-btn uk-btn-default uk-btn-sm uk-btn-icon", onclick=f"socket.emit('exec_py_serialized', {serialize_to_base64({'fn': pop_example, 'args': [subsentence, meaning]})!r})")).add(
                         Element('uk-icon', attrs=dict(icon="trash-2"))
                     )
                 )
