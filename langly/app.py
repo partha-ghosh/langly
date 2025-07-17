@@ -458,10 +458,10 @@ def handle_connect():
     info['deepl_api_key'] = deepl_api_key    
 
 
-    for container, id, default_lang in [('known-lang-container', 'known_lang', known_lang), ('unknown-lang-container', 'unknown_lang', unknown_lang)]:
+    for container, id, label, default_lang in [('known-lang-container', 'known_lang', "Language you know", known_lang), ('unknown-lang-container', 'unknown_lang', "Language to learn", unknown_lang)]:
         div = Element('span')
         div.add(
-            Element('label', attrs=dict(class_="uk-form-label"), leaf="Language you know")
+            Element('label', attrs=dict(class_="uk-form-label"), leaf=label)
         ).add(
             Element('div', attrs=dict(class_="uk-form-controls")).add(
                 uk_sel := Element('uk-select', attrs=dict(value=default_lang, cls__custom="button: uk-input-fake justify-between w-full; dropdown: w-full", icon="", onclick="socket.emit('exec_py', {{fn: '{id}', args: [document.getElementById('{id}').selected.value]}})".format(id=id))).add(
