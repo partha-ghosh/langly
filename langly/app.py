@@ -168,35 +168,35 @@ def save_meaning(subsentence, meaning, sent_idx):
     info['vocab_data'].setdefault(lang_key, dict())
 
 
-    if not info['vocab_data'][lang_key].get((subsentence,meaning), None):
-        info['vocab_data'][lang_key][(subsentence,meaning)] = dict(
+    if not info['vocab_data'][lang_key].get(f"{(subsentence,meaning)}", None):
+        info['vocab_data'][lang_key][f"{(subsentence,meaning)}"] = dict(
             subsentence=subsentence,
             translation=meaning,
             rating=1,
             interval=1,
             examples=[]
         )
-    info['vocab_data'][lang_key][(subsentence,meaning)]['examples'].append(
+    info['vocab_data'][lang_key][f"{(subsentence,meaning)}"]['examples'].append(
         [info['sentences'][sent_idx], info['sentences'][sent_idx+1]] if (sent_idx % 2 == 0) else \
         [info['sentences'][sent_idx-1], info['sentences'][sent_idx]]
     )
 
-    if len(info['vocab_data'][lang_key][(subsentence,meaning)]['examples']) > 100:
-        info['vocab_data'][lang_key][(subsentence,meaning)]['examples'] = info['vocab_data'][lang_key][(subsentence,meaning)]['examples'][-100:]
+    if len(info['vocab_data'][lang_key][f"{(subsentence,meaning)}"]['examples']) > 100:
+        info['vocab_data'][lang_key][f"{(subsentence,meaning)}"]['examples'] = info['vocab_data'][lang_key][f"{(subsentence,meaning)}"]['examples'][-100:]
 
 def pop_example(subsentence, meaning):
     lang_key = f"{info['known_lang']}2{info['unknown_lang']}"
     info['vocab_data'].setdefault(lang_key, dict())
     if info['vocab_data'][lang_key].get((subsentence,meaning), None):
-        if len(info['vocab_data'][lang_key][(subsentence,meaning)]['examples']) == 1:
-            info['vocab_data'][lang_key].pop((subsentence,meaning))
+        if len(info['vocab_data'][lang_key][f"{(subsentence,meaning)}"]['examples']) == 1:
+            info['vocab_data'][lang_key].pop(f"{(subsentence,meaning)}")
         else:
-            info['vocab_data'][lang_key][(subsentence,meaning)]['examples'].pop(-1)
+            info['vocab_data'][lang_key][f"{(subsentence,meaning)}"]['examples'].pop(-1)
 
 def delete_meaning(subsentence, meaning):
     lang_key = f"{info['known_lang']}2{info['unknown_lang']}"
     info['vocab_data'].setdefault(lang_key, dict())
-    info['vocab_data'][lang_key].pop((subsentence,meaning), None)
+    info['vocab_data'][lang_key].pop(f"{(subsentence,meaning)}", None)
     calc_dues()
 
 def calc_dues():
