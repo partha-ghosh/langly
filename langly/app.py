@@ -260,7 +260,13 @@ def get_next_card():
     for idx, (sentence, translation) in enumerate(related_examples):
         examples.update(
             Element('li').add(
-                Element('p', leaf=sentence)
+                Element('div').add(
+                    Element('span', attrs=dict(class_="py-1 text-muted-foreground"), leaf=sentence + ' ')
+                ).add(
+                    Element('a', attrs=dict(class_="uk-btn uk-btn-default uk-btn-sm uk-btn-icon", onclick=f"socket.emit('exec_py_serialized', {serialize_to_base64({'fn': text_to_speech, 'args': [sentence, info['known_lang']]})!r})")).add(
+                        Element('uk-icon', attrs=dict(icon="volume-2"))
+                    )
+                )
             ).add(
                 Element('div').add(
                     Element('span', attrs=dict(class_="py-1 text-muted-foreground"), leaf=translation + ' ')
