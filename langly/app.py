@@ -371,10 +371,6 @@ def group_consecutive(indices):
     if not indices:
         return []
 
-    position_map = {}
-    for idx, elem in enumerate(reversed(indices)):
-        position_map[elem] = idx
-
     indices.sort()
     groups = []
     current = [indices[0]]
@@ -385,8 +381,7 @@ def group_consecutive(indices):
             groups.append(tuple(current))
             current = [idx]
     groups.append(tuple(current))
-
-    return sorted(groups, key=lambda x: position_map[x[0]])
+    return groups[::-1]
 
 def process_text(text):
     sentences = re.split(r'(?<=[.!?])\s+', text.strip())
