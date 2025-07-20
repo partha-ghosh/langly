@@ -372,7 +372,7 @@ def group_consecutive(indices):
         return []
 
     position_map = {}
-    for idx, elem in enumerate(reserved(indices)):
+    for idx, elem in enumerate(reversed(indices)):
         position_map[elem] = idx
 
     indices.sort()
