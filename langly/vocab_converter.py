@@ -11,4 +11,4 @@ for lang_key in vocab:
 
 
 with open('vocabulary.json', 'w') as f:
-    json.dump(data, f)
+    json.dump(new_vocab, f)
