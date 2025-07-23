@@ -78,8 +78,15 @@
         // document.getElementById('content').insertAdjacentHTML('afterend', data);
       });
 
+      let tts = null;
+      
       socket.on('play', function (str) {
-        return new Audio(str).play();
+        tts = new Audio(str);
+        return tts.play();
+      });
+
+      socket.on('rewind', function () {
+        tts.currentTime -= 2;
       });
 
       window.onbeforeunload = function() {
