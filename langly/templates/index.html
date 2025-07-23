@@ -85,11 +85,9 @@
         tts.play();
       });
 
-      socket.on('rewind', function () {
-        tts.pause()
-        tts.currentTime -= 3;
-        tts.play()
-      });
+      rewind = function () {
+        tts.currentTime -= 2;
+      };
 
       window.onbeforeunload = function() {
         return "You would lose the state!";
