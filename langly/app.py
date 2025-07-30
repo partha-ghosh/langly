@@ -179,7 +179,7 @@ def save_meaning(subsentence, meaning, sent_idx):
         )
     
 
-    example = [info['sentences'][sent_idx], info['sentences'][sent_idx+1]] 
+    example = [info['sentences'][sent_idx], info['sentences'][sent_idx+1]] \
         if (sent_idx % 2 == 0) else [info['sentences'][sent_idx-1], info['sentences'][sent_idx]]
     example_id = hashlib.md5(str(example).encode('UTF-8')).hexdigest()
 
