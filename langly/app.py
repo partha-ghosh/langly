@@ -14,6 +14,7 @@ import random
 import atexit
 import re
 import math
+import hashlib
 
 app = Flask(__name__)
 app.config['SECRET_KEY'] = 'your_secret_key'
@@ -35,7 +36,7 @@ root_save_dir = '.'
 try:
     vocab_data = load_json(f'{root_save_dir}/vocabulary.json')
 except FileNotFoundError:
-    vocab_data = dict()
+    vocab_data = dict(examples=dict())
 
 info = dict(
     supported_langs=dict(
@@ -98,8 +99,9 @@ def update_vocab_list(search_string):
         # Get all sentences and filter by search text
         all_sentences = dict()
         for word_key in info['vocab_data'][lang_key]:
-            examples = info['vocab_data'][lang_key][word_key]['examples']
-            for sentence, translation in examples:
+            example_ids = info['vocab_data'][lang_key][word_key]['example_ids']
+            for example_id in example_ids:
+                sentence, translation = info['vocab_data']['examples'][example_id]
                 all_sentences.setdefault(sentence, dict(translation=translation, usage=dict()))
                 subsentence = vocab_data[lang_key][word_key]['subsentence']
                 all_sentences[sentence]['usage'][subsentence] = vocab_data[lang_key][word_key]['translation']
@@ -135,7 +137,6 @@ def update_vocab_list(search_string):
                 Element('div'), index=ri
             )
 
-            
 
 def translate(text, source, target):
     info['translator'] = DeeplTranslator(api_key=info['deepl_api_key'], source=source, target=target, use_free_api=True)
@@ -174,24 +175,29 @@ def save_meaning(subsentence, meaning, sent_idx):
             translation=meaning,
             rating=1,
             interval=1,
-            examples=[]
+            example_ids=[]
         )
-    info['vocab_data'][lang_key][f"{(subsentence,meaning)}"]['examples'].append(
-        [info['sentences'][sent_idx], info['sentences'][sent_idx+1]] if (sent_idx % 2 == 0) else \
-        [info['sentences'][sent_idx-1], info['sentences'][sent_idx]]
-    )
+    
 
-    if len(info['vocab_data'][lang_key][f"{(subsentence,meaning)}"]['examples']) > 100:
-        info['vocab_data'][lang_key][f"{(subsentence,meaning)}"]['examples'] = info['vocab_data'][lang_key][f"{(subsentence,meaning)}"]['examples'][-100:]
+    example = [info['sentences'][sent_idx], info['sentences'][sent_idx+1]] 
+        if (sent_idx % 2 == 0) else [info['sentences'][sent_idx-1], info['sentences'][sent_idx]]
+    example_id = hashlib.md5(str(example).encode('UTF-8')).hexdigest()
+
+    if not info['vocab_data']['examples'].get(example_id, None):
+        info['vocab_data']['examples'][example_id] = example 
+        info['vocab_data'][lang_key][f"{(subsentence,meaning)}"]['example_ids'].append(example_id)
+
+    if len(info['vocab_data'][lang_key][f"{(subsentence,meaning)}"]['example_ids']) > 100:
+        info['vocab_data'][lang_key][f"{(subsentence,meaning)}"]['example_ids'] = info['vocab_data'][lang_key][f"{(subsentence,meaning)}"]['example_ids'][-100:]
 
 def pop_example(subsentence, meaning):
     lang_key = f"{info['known_lang']}2{info['unknown_lang']}"
     info['vocab_data'].setdefault(lang_key, dict())
     if info['vocab_data'][lang_key].get((subsentence,meaning), None):
-        if len(info['vocab_data'][lang_key][f"{(subsentence,meaning)}"]['examples']) == 1:
+        if len(info['vocab_data'][lang_key][f"{(subsentence,meaning)}"]['example_ids']) == 1:
             info['vocab_data'][lang_key].pop(f"{(subsentence,meaning)}")
         else:
-            info['vocab_data'][lang_key][f"{(subsentence,meaning)}"]['examples'].pop(-1)
+            info['vocab_data'][lang_key][f"{(subsentence,meaning)}"]['example_ids'].pop(-1)
 
 def delete_meaning(subsentence, meaning):
     lang_key = f"{info['known_lang']}2{info['unknown_lang']}"
@@ -221,7 +227,7 @@ def get_next_card():
     word_key = info['dues'][lang_key][0]
     subsentence = info['vocab_data'][lang_key][word_key]['subsentence']
     meaning = info['vocab_data'][lang_key][word_key]['translation']
-    related_examples = random.sample(info['vocab_data'][lang_key][word_key]['examples'], min(10, len(info['vocab_data'][lang_key][word_key]['examples'])))
+    related_example_ids = random.sample(info['vocab_data'][lang_key][word_key]['example_ids'], min(10, len(info['vocab_data'][lang_key][word_key]['example_ids'])))
 
     if rand:=random.random() < 0.5:
         q = subsentence

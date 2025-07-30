@@ -1,15 +1,22 @@
 import json
+import hashlib
 
-with open('vocabulary2.json', 'r') as f:
+with open('vocabulary3.json', 'r') as f:
     vocab = json.load(f) 
 
-new_vocab = dict()
-for lang_key in vocab:
-    new_vocab.setdefault(lang_key, dict())
-    for subsentence in vocab[lang_key]:
-        meaning = vocab[lang_key][subsentence]['translation']
-        new_vocab[lang_key][f"{(subsentence, meaning)}"] = dict(subsentence=subsentence, **vocab[lang_key][subsentence])
+vocab['examples'] = dict()
 
+for lang_key in vocab:
+    if '2' in lang_key:
+        for word_key in vocab[lang_key]:
+            examples = vocab[lang_key][word_key].pop('examples')
+            vocab[lang_key][word_key].setdefault('example_ids', [])
+
+            for example in examples:
+                example_id = hashlib.md5(str(example).encode('UTF-8')).hexdigest()
+                if not vocab['examples'].get(example_id, None):
+                    vocab['examples'][example_id] = example
+                    vocab[lang_key][word_key]['examples_ids'].append(example_id)
 
 with open('vocabulary.json', 'w') as f:
-    json.dump(new_vocab, f)
+    json.dump(vocab, f)
