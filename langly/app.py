@@ -263,7 +263,8 @@ def get_next_card():
 
     examples = info['examples_container']
     idx = -1
-    for idx, (sentence, translation) in enumerate(related_examples):
+    for idx, related_example_id in enumerate(related_example_ids):
+        sentence, translation = info['vocab_data']['examples'][related_example_id]
         examples.update(
             Element('li').add(
                 Element('div').add(
