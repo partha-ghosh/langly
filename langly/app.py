@@ -183,8 +183,8 @@ def save_meaning(subsentence, meaning, sent_idx):
         if (sent_idx % 2 == 0) else [info['sentences'][sent_idx-1], info['sentences'][sent_idx]]
     example_id = hashlib.md5(str(example).encode('UTF-8')).hexdigest()
 
-    if not info['vocab_data']['examples'].get(example_id, None):
-        info['vocab_data']['examples'][example_id] = example 
+    info['vocab_data']['examples'][example_id] = example 
+    if example_id not in info['vocab_data'][lang_key][f"{(subsentence,meaning)}"]['example_ids']:
         info['vocab_data'][lang_key][f"{(subsentence,meaning)}"]['example_ids'].append(example_id)
 
     if len(info['vocab_data'][lang_key][f"{(subsentence,meaning)}"]['example_ids']) > 100:
