@@ -404,8 +404,29 @@ def group_consecutive(indices):
     groups.append(tuple(current))
     return groups[::-1]
 
+def split_sentences(paragraph):
+    # Split on whitespace after punctuation (optionally followed by a quote) or at end-of-string
+    parts = re.split(r'([.!?][\'"“]?)(?:\s+|$)', paragraph)
+    sentences = []
+    buffer = ""
+    
+    for i, part in enumerate(parts):
+        if i % 2 == 0:
+            # Even indices: sentence fragments (text between delimiters)
+            buffer = part
+        else:
+            # Odd indices: delimiters (punctuation + optional quote)
+            buffer += part
+            sentences.append(buffer)
+            buffer = ""
+    
+    if buffer:  # Add any remaining text
+        sentences.append(buffer)
+    
+    return sentences
+
 def process_text(text):
-    sentences = re.split(r'(?<=[.!?])\s+', text.strip())
+    sentences = split_sentences(text.strip())
 
     info['sentences'].clear()
     info['learn_container'].clear()
