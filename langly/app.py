@@ -15,6 +15,8 @@ import atexit
 import re
 import math
 import hashlib
+import matplotlib.pyplot as plt
+import numpy as np
 
 app = Flask(__name__)
 app.config['SECRET_KEY'] = 'your_secret_key'
@@ -68,7 +70,7 @@ info = dict(
     answer_container = [answer_container := Element('span'), setattr(answer_container, 'key', 'answer')][0],
     examples_container = [examples_container := Element('div', attrs=dict(class_="uk-list uk-list-divider")), setattr(examples_container, 'key', 'examples')][0],
     search_result_container = [search_result_container := Element('div', attrs=dict(class_="space-y-2")), setattr(search_result_container, 'key', 'search_results')][0],
-
+    progress_plot_container = [progress_plot_container := Element('div'), setattr(progress_plot_container, 'key', 'progress-plot')][0],
 )
 
 
@@ -205,10 +207,63 @@ def delete_meaning(subsentence, meaning):
     info['vocab_data'][lang_key].pop(f"{(subsentence,meaning)}", None)
     calc_dues()
 
+
+def plot_relative_frequency(floats, save_path):
+    # Round to nearest integers and filter non-negative
+    integers = [int(round(x)) for x in floats]
+    non_negative = [x for x in integers if x >= 0]
+    
+    if not non_negative:
+        print("No non-negative integers found.")
+        return
+    
+    max_int = max(non_negative)
+    counts = [0] * (max_int + 1)
+    total = len(non_negative)
+    
+    for num in non_negative:
+        counts[num] += 1
+    
+    relative_freq = [count / total for count in counts]
+    
+    # Generate colors from red to green
+    colors = []
+    for i in range(len(relative_freq)):
+        if max_int == 0:
+            # Only one element, which is 0, so red
+            colors.append((1.0, 0.0, 0.0))
+        else:
+            # Interpolate from red (1,0,0) to green (0,1,0)
+            red = 1 - (i / max_int)
+            green = i / max_int
+            colors.append((red, green, 0.0))
+    
+    # Create plot with aspect ratio 7:1
+    fig, ax = plt.subplots(figsize=(8, 1))
+    x = range(len(relative_freq))
+    ax.bar(x, relative_freq, color=colors, width=1.0, edgecolor='none')
+    ax.set_xlim(-0.5, len(relative_freq) - 0.5)
+    ax.set_ylim(0, max(relative_freq) * 1.05 if max(relative_freq) > 0 else 1)
+    
+    # Remove spines and ticks for a cleaner look
+    ax.spines['top'].set_visible(False)
+    ax.spines['right'].set_visible(False)
+    ax.spines['left'].set_visible(False)
+    ax.yaxis.set_ticks_position('none')
+    ax.xaxis.set_ticks_position('none')
+    ax.tick_params(axis='both', which='both', length=0)
+    
+    plt.savefig(save_path, bbox_inches='tight', pad_inches=0.1)
+    plt.close()
+
+
 def calc_dues():
     lang_key = f"{info['known_lang']}2{info['unknown_lang']}"
     info['dues'].setdefault(lang_key, [])
     info['dues'][lang_key].clear()
+
+    plot_relative_frequency(floats=[info['vocab_data'][lang_key][word_key]['interval'] for word_key in info['vocab_data'][lang_key]], save_path="static/img/progress.png")
+    info['progress_plot_container'].update(Element('img', attrs=dict(src="static/img/progress.png")), index=0)
 
     today = datetime.today().date()
     for word_key, details in info['vocab_data'].get(lang_key, {}).items():
@@ -508,7 +563,6 @@ def save_deepl_api_key(api_key):
     save_json(f'{root_save_dir}/config.json', config)
     info['deepl_api_key'] = api_key  
 
-
 @app.route('/')
 def index():
     return render_template('index.html')
@@ -524,7 +578,6 @@ def handle_connect():
     info['known_lang'] = info['supported_langs'][known_lang]
     info['unknown_lang'] = info['supported_langs'][unknown_lang]
     info['deepl_api_key'] = deepl_api_key    
-
 
     for container, id, label, default_lang in [('known-lang-container', 'known_lang', "Language you know", known_lang), ('unknown-lang-container', 'unknown_lang', "Language to learn", unknown_lang)]:
         div = Element('span')
