@@ -217,33 +217,31 @@ def plot_relative_frequency(floats, save_path):
         print("No non-negative integers found.")
         return
     
+    total_count = len(non_negative)
     max_int = max(non_negative)
     counts = [0] * (max_int + 1)
-    total = len(non_negative)
     
     for num in non_negative:
         counts[num] += 1
     
-    relative_freq = [count / total for count in counts]
+    relative_freq = [count / total_count for count in counts]
     
     # Generate colors from red to green
     colors = []
     for i in range(len(relative_freq)):
         if max_int == 0:
-            # Only one element, which is 0, so red
             colors.append((1.0, 0.0, 0.0))
         else:
-            # Interpolate from red (1,0,0) to green (0,1,0)
             red = 1 - (i / max_int)
             green = i / max_int
             colors.append((red, green, 0.0))
     
     # Create plot with aspect ratio 7:1
     fig, ax = plt.subplots(figsize=(8, 1))
-    x = range(len(relative_freq))
-    ax.bar(x, relative_freq, color=colors, width=1.0, edgecolor='none')
+    x_positions = np.arange(len(relative_freq))
+    bars = ax.bar(x_positions, relative_freq, color=colors, width=1.0, edgecolor='none')
     ax.set_xlim(-0.5, len(relative_freq) - 0.5)
-    ax.set_ylim(0, max(relative_freq) * 1.05 if max(relative_freq) > 0 else 1)
+    ax.set_ylim(0, max(relative_freq) * 1.1 if max(relative_freq) > 0 else 1)
     
     # Remove spines and ticks for a cleaner look
     ax.spines['top'].set_visible(False)
@@ -252,6 +250,16 @@ def plot_relative_frequency(floats, save_path):
     ax.yaxis.set_ticks_position('none')
     ax.xaxis.set_ticks_position('none')
     ax.tick_params(axis='both', which='both', length=0)
+    
+    # Add title with total count
+    ax.set_title(f'Total Subsenteces: {total_count}', pad=10)
+    
+    # Annotate each bar with its count
+    for idx, (bar, count) in enumerate(zip(bars, counts)):
+        height = bar.get_height()
+        ax.text(bar.get_x() + bar.get_width()/2., height,
+                f'{count}',
+                ha='center', va='bottom', fontsize=8)
     
     plt.savefig(save_path, bbox_inches='tight', pad_inches=0.1)
     plt.close()
