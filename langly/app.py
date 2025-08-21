@@ -70,7 +70,7 @@ info = dict(
     answer_container = [answer_container := Element('span'), setattr(answer_container, 'key', 'answer')][0],
     examples_container = [examples_container := Element('div', attrs=dict(class_="uk-list uk-list-divider")), setattr(examples_container, 'key', 'examples')][0],
     search_result_container = [search_result_container := Element('div', attrs=dict(class_="space-y-2")), setattr(search_result_container, 'key', 'search_results')][0],
-    progress_plot_container = [progress_plot_container := Element('div'), setattr(progress_plot_container, 'key', 'progress-plot')][0],
+    progress_plot_container = [progress_plot_container := Element('span'), setattr(progress_plot_container, 'key', 'progress-plot')][0],
 )
 
 
