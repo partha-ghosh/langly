@@ -17,6 +17,7 @@ import math
 import hashlib
 import matplotlib.pyplot as plt
 import numpy as np
+import base64
 
 app = Flask(__name__)
 app.config['SECRET_KEY'] = 'your_secret_key'
@@ -271,7 +272,9 @@ def calc_dues():
     info['dues'][lang_key].clear()
 
     plot_relative_frequency(floats=[info['vocab_data'][lang_key][word_key]['interval'] for word_key in info['vocab_data'][lang_key]], save_path="static/img/progress.png")
-    info['progress_plot_container'].update(Element('img', attrs=dict(src="static/img/progress.png")), index=0)
+    with open("static/img/progress.png", "rb") as image_file:
+        encoded_string = base64.b64encode(image_file.read())
+    info['progress_plot_container'].update(Element('img', attrs=dict(src=f"data:image/png;base64, {encoded_string.decode('utf-8')}")), index=0)
 
     today = datetime.today().date()
     for word_key, details in info['vocab_data'].get(lang_key, {}).items():
