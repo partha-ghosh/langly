@@ -253,7 +253,7 @@ def plot_relative_frequency(floats, save_path):
     ax.tick_params(axis='both', which='both', length=0)
     
     # Add title with total count
-    ax.set_title(f'Total Subsenteces: {total_count}', pad=10)
+    ax.set_title(f'Total Subsentences: {total_count}', pad=10)
     
     # Annotate each bar with its count
     for idx, (bar, count) in enumerate(zip(bars, counts)):
