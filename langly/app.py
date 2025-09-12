@@ -210,39 +210,50 @@ def delete_meaning(subsentence, meaning):
 
 
 def plot_relative_frequency(floats, save_path):
-    # Round to nearest integers and filter non-negative
-    integers = [int(round(x)) for x in floats]
-    non_negative = [x for x in integers if x >= 0]
-    
-    if not non_negative:
-        print("No non-negative integers found.")
+    # Filter positive values
+    positive = [x for x in floats if x > 0]
+    if not positive:
+        print("No positive values found.")
         return
     
-    total_count = len(non_negative)
-    max_int = max(non_negative)
-    counts = [0] * (max_int + 1)
+    max_val = max(positive)
+    # Generate ticks: [0.25, 0.5, 1, 2, 4, ...] up to beyond max_val
+    ticks = [0.25, 0.5]
+    while ticks[-1] < max_val:
+        ticks.append(ticks[-1] * 2)
     
-    for num in non_negative:
-        counts[num] += 1
+    # Count frequencies for each tick
+    counts = [0] * len(ticks)
+    for num in positive:
+        # Find the closest tick
+        closest_tick_index = min(range(len(ticks)), key=lambda i: abs(ticks[i] - num))
+        counts[closest_tick_index] += 1
     
+    total_count = len(positive)
     relative_freq = [count / total_count for count in counts]
     
-    # Generate colors from red to green
+    # Generate colors from red to green based on tick index
+    n_ticks = len(ticks)
     colors = []
-    for i in range(len(relative_freq)):
-        if max_int == 0:
+    for i in range(n_ticks):
+        if n_ticks == 1:
             colors.append((1.0, 0.0, 0.0))
         else:
-            red = 1 - (i / max_int)
-            green = i / max_int
+            red = 1 - (i / (n_ticks - 1))
+            green = i / (n_ticks - 1)
             colors.append((red, green, 0.0))
     
     # Create plot with aspect ratio 7:1
     fig, ax = plt.subplots(figsize=(8, 1))
-    x_positions = np.arange(len(relative_freq))
+    x_positions = np.arange(len(ticks))
     bars = ax.bar(x_positions, relative_freq, color=colors, width=1.0, edgecolor='none')
-    ax.set_xlim(-0.5, len(relative_freq) - 0.5)
+    ax.set_xlim(-0.5, len(ticks) - 0.5)
     ax.set_ylim(0, max(relative_freq) * 1.1 if max(relative_freq) > 0 else 1)
+    
+    # Set x-axis ticks and labels
+    ax.set_xticks(x_positions)
+    tick_labels = [f'{tick:g}' for tick in ticks]
+    ax.set_xticklabels(tick_labels)
     
     # Remove spines and ticks for a cleaner look
     ax.spines['top'].set_visible(False)
